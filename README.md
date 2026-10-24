@@ -72,3 +72,14 @@ By evaluating structural condition, repair feasibility, spare part availability,
 - **JavaScript (ES6+)**: Modular client-side architecture (`data.js`, `engine.js`, `app.js`) with zero npm dependencies, build tools, or frameworks.
 
 ---
+
+## ⚡ How to Run Locally
+
+1. **Direct Browser Launch:**
+   - Double-click `index.html` in your file explorer to open it in Chrome, Edge, Firefox, Brave, or Safari.
+
+2. **Local Development Server (Recommended for Webcam Access):**
+   ```powershell
+   python -m http.server 8000
+   ```
+   Open `http://localhost:8000` in your browser.
