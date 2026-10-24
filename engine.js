@@ -7,6 +7,7 @@
  * - Economic Viability Ratio (EVR)
  * - Severity & Safety Hazard Veto Rules
  * - Right-to-Repair lifecycle heuristics
+ * - Spatial Action Zone Drop Evaluation (Repair, Reuse, Repurpose, Recycle, Replace)
  */
 
 class RefixEngine {
@@ -15,7 +16,7 @@ class RefixEngine {
   }
 
   /**
-   * Main assessment evaluator
+   * Main assessment evaluator for general condition inputs
    * @param {Object} input - form inputs
    * @returns {Object} detailed recommendation result
    */
@@ -23,29 +24,25 @@ class RefixEngine {
     const category = this.data.categories.find(c => c.id === input.category) || this.data.categories[0];
     const materialKey = input.material || (category.materials[0] && category.materials[0].id);
     const materialInfo = this.findMaterial(category, materialKey);
-    const carbonBenchmark = this.data.carbonFactors[materialKey] || { co2ePerKg: 10, waterLitersPerKg: 1000, circularScore: 50 };
+    const carbonBenchmark = (this.data.carbonFactors && this.data.carbonFactors[materialKey]) || { co2ePerKg: 10, waterLitersPerKg: 1000, circularScore: 50 };
 
     const originalCost = Math.max(5, parseFloat(input.originalCost) || 50);
     const ageYears = Math.max(0, parseFloat(input.ageYears) || 1);
-    const damageSeverity = input.damageSeverity || 'moderate';
+    const damageSeverity = input.damageSeverity || 'minor';
     const partsAvailability = input.partsAvailability || 'available';
     const userSkill = input.userSkill || 'intermediate';
 
     // Auto-estimate repair cost if not provided or 0
     let repairCost = parseFloat(input.repairCost);
-    let isRepairCostEstimated = false;
     if (isNaN(repairCost) || repairCost <= 0) {
       repairCost = this.estimateRepairCost(originalCost, damageSeverity, partsAvailability);
-      isRepairCostEstimated = true;
     }
 
     // Economic Viability Ratio: Repair Cost / Replacement Cost
     const evr = repairCost / originalCost;
-
-    // Repurpose DIY cost benchmark (typically 8-18% of original value for supplies/hardware)
     const repurposeCost = Math.round(originalCost * 0.12 * 10) / 10;
 
-    // Calculate component scores
+    // Component scores
     const severityScore = this.getSeverityScore(damageSeverity);
     const partsScore = this.getPartsScore(partsAvailability);
     const skillScore = this.getSkillScore(userSkill);
@@ -76,17 +73,14 @@ class RefixEngine {
       verdictReason = safetyVeto.reason;
       confidence = 96;
     } else if (evr > 0.70 && reuseScore >= 55) {
-      // Uneconomical to restore original purpose, but material has strong repurpose utility
       verdict = 'REUSE';
       verdictReason = `Repairing exceeds 70% of new replacement cost (${Math.round(evr * 100)}%), but the item's ${materialInfo.name} has high structural and creative reuse value.`;
       confidence = 86;
     } else if (evr > 0.75 && reuseScore < 55) {
-      // Uneconomical and low reuse utility
       verdict = 'REPLACE';
       verdictReason = `Repair cost is uneconomically high relative to replacement (${Math.round(evr * 100)}%) and spare parts or materials are heavily degraded. Safe recycling recommended.`;
       confidence = 84;
     } else if (repairabilityScore >= 55 && evr <= 0.65) {
-      // Clear repair candidate
       verdict = 'REPAIR';
       verdictReason = `High repair viability (${repairabilityScore}%) and strong economic return. Fixing costs only ${Math.round(evr * 100)}% of buying new.`;
       confidence = 92;
@@ -100,60 +94,240 @@ class RefixEngine {
       confidence = 78;
     }
 
-    // 5. Environmental Impact Calculations (Deterministic Demo Heuristics)
-    const impact = this.calculateEnvironmentalImpact(category, materialKey, verdict, originalCost);
+    // Savings Calculation
+    const moneySaved = Math.max(0, Math.round(originalCost - repairCost));
+    const savingsPercent = Math.min(99, Math.round((moneySaved / originalCost) * 100));
 
-    // 6. Savings comparison
-    const moneySaved = Math.max(0, originalCost - (verdict === 'REUSE' ? repurposeCost : repairCost));
-    const savingsPercent = Math.round((moneySaved / originalCost) * 100);
+    // Environmental Impact Diverted
+    const weightKg = category.landfillWeightKg || 2.5;
+    const co2eAvoidedKg = Math.round(weightKg * carbonBenchmark.co2ePerKg * (verdict === 'REPAIR' ? 0.9 : 0.75));
+    const wasteDivertedKg = Math.round(weightKg * (verdict === 'REPLACE' ? 0.4 : 0.95));
+    const waterConservedL = Math.round(weightKg * carbonBenchmark.waterLitersPerKg * 0.85);
 
-    // 7. Action plan recommendations
-    const actionPlan = this.generateActionPlan(verdict, category, materialKey, userSkill, damageSeverity, input.itemTitle);
+    // Action Plan Steps
+    const actionPlan = this.generateActionPlan(verdict, input.itemTitle, materialKey, damageSeverity, safetyVeto);
 
     return {
-      verdict, // 'REPAIR' | 'REUSE' | 'REPLACE'
+      verdict,
       verdictReason,
       confidence,
       repairabilityScore,
       reuseScore,
-      safetyVeto,
-      itemTitle: input.itemTitle || `${category.name} Item`,
-      category,
-      materialInfo,
       costs: {
         originalCost,
         repairCost,
         repurposeCost,
         moneySaved,
-        savingsPercent,
-        evr: Math.round(evr * 100),
-        isRepairCostEstimated
+        savingsPercent
       },
-      impact,
+      impact: {
+        co2eAvoidedKg,
+        wasteDivertedKg,
+        waterConservedL
+      },
       actionPlan,
-      timestamp: new Date().toISOString()
+      safetyVeto,
+      itemTitle: input.itemTitle,
+      categoryName: category.name,
+      materialName: materialInfo.name
     };
   }
 
-  findMaterial(category, materialId) {
-    if (!category || !category.materials) return null;
-    return category.materials.find(m => m.id === materialId) || category.materials[0];
+  /**
+   * Specialized Evaluator for Card Drops into a specific Action Zone
+   * @param {Object} item - The dragged item card or preset
+   * @param {string} actionZone - 'repair' | 'reuse' | 'repurpose' | 'recycle' | 'replace'
+   * @returns {Object} detailed recommendation result matching zone
+   */
+  evaluateDrop(item, actionZone) {
+    const categoryId = item.category || 'furniture';
+    const category = this.data.categories.find(c => c.id === categoryId) || this.data.categories[0];
+    const materialKey = item.material || (category.materials[0] && category.materials[0].id);
+    const materialInfo = this.findMaterial(category, materialKey);
+    const carbonBenchmark = (this.data.carbonFactors && this.data.carbonFactors[materialKey]) || { co2ePerKg: 10, waterLitersPerKg: 1000, circularScore: 50 };
+
+    const originalCost = Math.max(5, parseFloat(item.originalCostUSD || item.originalCost) || 50);
+    const damageSeverity = item.damageSeverity || item.severity || 'minor';
+
+    // 1. Safety Hazard Check
+    const safetyVeto = this.checkSafetyHazard(materialKey, damageSeverity, item.damageDetails || item.description);
+
+    // 2. Action Guidance Lookup from preset if available
+    const presetGuidance = (item.actionGuidance && item.actionGuidance[actionZone]) || null;
+
+    let verdict = actionZone.toUpperCase();
+    let verdictReason = '';
+    let confidence = 90;
+    let actionCost = 0;
+
+    if (actionZone === 'repair') {
+      actionCost = item.repairCostUSD !== undefined ? item.repairCostUSD : Math.round(originalCost * 0.18);
+    } else if (actionZone === 'repurpose') {
+      actionCost = Math.round(originalCost * 0.12 * 10) / 10;
+    } else if (actionZone === 'reuse') {
+      actionCost = Math.round(originalCost * 0.05);
+    } else if (actionZone === 'recycle') {
+      actionCost = 0;
+    } else {
+      actionCost = originalCost;
+    }
+
+    let steps = [];
+    let toolsNeeded = 'Standard household tools';
+    let headline = '';
+
+    // If safety veto applies and user attempts repair:
+    if (safetyVeto.isHazardous && (actionZone === 'repair' || actionZone === 'reuse')) {
+      verdict = 'REPLACE';
+      confidence = 98;
+      verdictReason = `CRITICAL SAFETY ALERT: ${safetyVeto.reason} Repairing or reusing this item is unsafe. Safe retirement and certified recycling mandated.`;
+      steps = [
+        'Discontinue food preparation, wearing, or use immediately.',
+        'Do not attempt DIY chemical re-coating, gluing, or taping.',
+        'Deliver to certified specialized hazardous or scrap recycler.',
+        'Replace with non-toxic, Buy-It-For-Life alternative.'
+      ];
+      toolsNeeded = 'Protective gloves / Disconnect';
+    } else if (presetGuidance) {
+      verdictReason = presetGuidance.explanation;
+      steps = presetGuidance.steps;
+      toolsNeeded = Array.isArray(presetGuidance.toolsNeeded) ? presetGuidance.toolsNeeded.join(', ') : presetGuidance.toolsNeeded;
+      headline = presetGuidance.headline;
+    } else {
+      // Rule-based fallback for arbitrary items
+      const fallback = this.generateFallbackGuidance(actionZone, item.itemTitle || item.name || 'Object', materialInfo.name);
+      verdictReason = fallback.explanation;
+      steps = fallback.steps;
+      toolsNeeded = fallback.tools;
+      headline = fallback.headline;
+    }
+
+    const moneySaved = Math.max(0, Math.round(originalCost - actionCost));
+    const savingsPercent = Math.min(99, Math.round((moneySaved / originalCost) * 100));
+
+    // Environmental metrics
+    const weightKg = category.landfillWeightKg || 2.5;
+    const co2eAvoidedKg = Math.round(weightKg * carbonBenchmark.co2ePerKg * (actionZone === 'replace' ? 0.15 : 0.88));
+    const wasteDivertedKg = Math.round(weightKg * (actionZone === 'replace' ? 0.4 : 0.95));
+    const waterConservedL = Math.round(weightKg * carbonBenchmark.waterLitersPerKg * (actionZone === 'replace' ? 0.1 : 0.85));
+
+    // Scores
+    let repairabilityScore = actionZone === 'repair' ? 88 : (actionZone === 'replace' ? 25 : 65);
+    let reuseScore = (actionZone === 'reuse' || actionZone === 'repurpose') ? 85 : 60;
+    if (safetyVeto.isHazardous) {
+      repairabilityScore = 10;
+      reuseScore = 15;
+    }
+
+    return {
+      verdict,
+      actionZone,
+      headline: headline || `${actionZone.toUpperCase()} Pathway`,
+      verdictReason,
+      confidence,
+      repairabilityScore,
+      reuseScore,
+      costs: {
+        originalCost,
+        repairCost: actionZone === 'repair' ? actionCost : Math.round(originalCost * 0.18),
+        repurposeCost: actionZone === 'repurpose' ? actionCost : Math.round(originalCost * 0.12),
+        actionCost,
+        moneySaved,
+        savingsPercent
+      },
+      impact: {
+        co2eAvoidedKg,
+        wasteDivertedKg,
+        waterConservedL
+      },
+      actionPlan: {
+        mode: `Action Pathway: ${actionZone.toUpperCase()}`,
+        steps,
+        toolsNote: toolsNeeded
+      },
+      safetyVeto,
+      itemTitle: item.itemTitle || item.name || 'Item',
+      categoryName: category.name,
+      materialName: materialInfo.name
+    };
+  }
+
+  // Safety Hazard Veto Check
+  checkSafetyHazard(materialKey, severity, description = '') {
+    const desc = (description || '').toLowerCase();
+
+    // 1. Peeling Teflon Non-Stick cookware
+    if (materialKey === 'teflon_nonstick' && (severity === 'critical' || severity === 'moderate' || desc.includes('flak') || desc.includes('peel') || desc.includes('scratch'))) {
+      return {
+        isHazardous: true,
+        reason: 'CRITICAL HEALTH HAZARD: Flaking PTFE non-stick coatings emit toxic fluoropolymers and PFAS into food when heated. Surface re-coating at home is strictly prohibited.',
+        action: 'REPLACE'
+      };
+    }
+
+    // 2. Cracked bicycle safety helmet
+    if (materialKey === 'safety_foam_eps' && (severity === 'critical' || severity === 'moderate' || desc.includes('crack') || desc.includes('impact') || desc.includes('foam'))) {
+      return {
+        isHazardous: true,
+        reason: 'CRITICAL IMPACT SAFETY RISK: Expanded Polystyrene (EPS) helmet foam is single-use compression material. Any internal fracture permanently destroys shock dissipation capability. Gluing or taping gives a fatal illusion of protection.',
+        action: 'REPLACE'
+      };
+    }
+
+    // 3. Swollen Lithium Battery
+    if (desc.includes('swollen') || desc.includes('bulging battery') || desc.includes('smoke') || desc.includes('thermal runaway')) {
+      return {
+        isHazardous: true,
+        reason: 'FIRE / EXPLOSION HAZARD: Punctured or swollen lithium-ion cells risk catastrophic thermal runaway fires. Never charge or puncture a swollen battery.',
+        action: 'REPLACE'
+      };
+    }
+
+    return { isHazardous: false };
+  }
+
+  calculateReuseScore(category, materialKey, severity, ageYears, carbonBenchmark) {
+    let score = (carbonBenchmark && carbonBenchmark.circularScore) || 50;
+
+    if (materialKey === 'cotton_denim' || materialKey === 'solid_wood' || materialKey === 'cast_iron_steel') {
+      score += 20;
+    }
+    if (severity === 'cosmetic' || severity === 'minor') {
+      score += 15;
+    }
+    if (severity === 'critical') {
+      score -= 25;
+    }
+    return Math.min(100, Math.max(10, score));
+  }
+
+  estimateRepairCost(originalCost, severity, parts) {
+    let factor = 0.15;
+    if (severity === 'cosmetic') factor = 0.08;
+    if (severity === 'minor') factor = 0.15;
+    if (severity === 'moderate') factor = 0.32;
+    if (severity === 'critical') factor = 0.55;
+
+    if (parts === 'rare') factor += 0.12;
+    if (parts === 'discontinued' || parts === 'none') factor += 0.20;
+
+    return Math.max(5, Math.round(originalCost * factor));
   }
 
   getSeverityScore(severity) {
     switch (severity) {
       case 'cosmetic': return 95;
-      case 'minor': return 82;
-      case 'moderate': return 52;
+      case 'minor': return 80;
+      case 'moderate': return 50;
       case 'critical': return 15;
-      default: return 60;
+      default: return 70;
     }
   }
 
-  getPartsScore(availability) {
-    switch (availability) {
-      case 'available': return 100;
-      case 'rare': return 65;
+  getPartsScore(parts) {
+    switch (parts) {
+      case 'available': return 95;
+      case 'rare': return 55;
       case 'discontinued': return 35;
       case 'none': return 10;
       default: return 70;
@@ -162,184 +336,111 @@ class RefixEngine {
 
   getSkillScore(skill) {
     switch (skill) {
-      case 'beginner': return 60;
+      case 'beginner': return 65;
       case 'intermediate': return 85;
       case 'advanced': return 100;
-      case 'hire_pro': return 95; // Local pro can execute complex fixes
-      default: return 75;
+      case 'hire_pro': return 75;
+      default: return 80;
     }
   }
 
-  estimateRepairCost(originalCost, severity, parts) {
-    let multiplier = 0.20; // default 20%
-    if (severity === 'cosmetic') multiplier = 0.08;
-    else if (severity === 'minor') multiplier = 0.16;
-    else if (severity === 'moderate') multiplier = 0.35;
-    else if (severity === 'critical') multiplier = 0.65;
-
-    if (parts === 'rare') multiplier *= 1.25;
-    if (parts === 'discontinued') multiplier *= 1.5;
-
-    return Math.max(5, Math.round(originalCost * multiplier));
+  findMaterial(category, materialId) {
+    if (category && category.materials) {
+      const mat = category.materials.find(m => m.id === materialId);
+      if (mat) return mat;
+    }
+    return { id: 'unknown', name: 'Standard Material', repairEase: 60, recyclability: 50 };
   }
 
-  checkSafetyHazard(materialKey, severity, detailsText) {
-    const text = (detailsText || '').toLowerCase();
-
-    // 1. Non-stick Teflon peeling
-    if (materialKey === 'teflon_nonstick' && (severity === 'moderate' || severity === 'critical' || text.includes('peel') || text.includes('flake'))) {
+  generateActionPlan(verdict, title, materialKey, severity, safetyVeto) {
+    if (safetyVeto.isHazardous) {
       return {
-        isHazardous: true,
-        reason: 'SAFETY HAZARD: Damaged non-stick PTFE coatings can flake into food and emit toxic fluoropolymer fumes when heated. Home resurfacing is unsafe. Retire & recycle the aluminum pan body.'
+        mode: 'Safety Mandate: Safe Retirement & Recycling',
+        steps: [
+          'Cease using the item immediately to prevent health contamination or bodily injury.',
+          'Do not attempt home DIY glue, tape, or surface paint restoration.',
+          'Take to a certified municipal hazardous waste or scrap metal reclamation depot.',
+          'Upgrade to a non-toxic, serviceable Buy-It-For-Life design.'
+        ],
+        toolsNote: 'Protective gloves, Safe transport container'
       };
     }
-
-    // 2. Helmet EPS impact foam crack
-    if (materialKey === 'safety_foam_eps' && (severity === 'moderate' || severity === 'critical' || text.includes('crack') || text.includes('impact') || text.includes('crash'))) {
-      return {
-        isHazardous: true,
-        reason: 'CRITICAL SAFETY MANDATE: Safety helmets rely on single-use EPS foam compression to dissipate traumatic impact shock. Any foam fracture destroys structural shock absorption. Do not use or repair.'
-      };
-    }
-
-    // 3. Swollen lithium battery
-    if ((text.includes('swollen') || text.includes('bloated') || text.includes('burning') || text.includes('smoke')) && (materialKey.includes('electronics') || materialKey === 'modular_electronics' || materialKey === 'sealed_electronics')) {
-      return {
-        isHazardous: true,
-        reason: 'FIRE HAZARD: Swollen battery or burning smell indicates thermal instability. Discontinue charging immediately and transport safely to a hazardous e-waste recycler.'
-      };
-    }
-
-    return { isHazardous: false, reason: null };
-  }
-
-  calculateReuseScore(category, materialKey, severity, ageYears, carbonBenchmark) {
-    let base = 50;
-
-    // Materials with great upcycle / craft value
-    if (['cotton_denim', 'solid_wood', 'leather', 'cast_iron_steel', 'ceramic_porcelain'].includes(materialKey)) {
-      base += 25;
-    } else if (['polypropylene', 'steel_alloy', 'modular_electronics'].includes(materialKey)) {
-      base += 15;
-    }
-
-    // Older items that might no longer serve primary role
-    if (ageYears > 5) base += 10;
-    if (severity === 'moderate' || severity === 'minor') base += 10;
-
-    return Math.min(95, Math.max(15, base));
-  }
-
-  calculateEnvironmentalImpact(category, materialKey, verdict, originalCost) {
-    const factor = this.data.carbonFactors[materialKey] || { co2ePerKg: 12, waterLitersPerKg: 2000 };
-    const baseWeightKg = category.landfillWeightKg || 3.5;
-    const baseReplacementCO2 = category.co2ReplacementKg || 30;
-
-    let co2AvoidedKg = 0;
-    let wasteDivertedKg = 0;
-    let waterLitersSaved = 0;
 
     if (verdict === 'REPAIR') {
-      // Full replacement avoided
-      co2AvoidedKg = Math.round(baseReplacementCO2 * 0.88 * 10) / 10;
-      wasteDivertedKg = Math.round(baseWeightKg * 0.95 * 10) / 10;
-      waterLitersSaved = Math.round(factor.waterLitersPerKg * baseWeightKg * 0.85);
-    } else if (verdict === 'REUSE') {
-      // Diverts 100% landfill waste, avoids ~70% manufacturing of new replacement item
-      co2AvoidedKg = Math.round(baseReplacementCO2 * 0.70 * 10) / 10;
-      wasteDivertedKg = Math.round(baseWeightKg * 0.98 * 10) / 10;
-      waterLitersSaved = Math.round(factor.waterLitersPerKg * baseWeightKg * 0.65);
-    } else {
-      // REPLACE with certified recycling avoids a fraction through raw material reclamation
-      co2AvoidedKg = Math.round(baseReplacementCO2 * 0.22 * 10) / 10;
-      wasteDivertedKg = Math.round(baseWeightKg * 0.60 * 10) / 10; // via municipal recycler
-      waterLitersSaved = Math.round(factor.waterLitersPerKg * baseWeightKg * 0.20);
+      return {
+        mode: 'Recommended Action: DIY / Community Fix',
+        steps: [
+          'Inspect the primary point of failure and remove degraded dust, dried glue, or rust.',
+          'Source standard fasteners, patch fabric, or adhesive matching material composition.',
+          'Execute repair following iFixit open manuals or local repair cafe volunteer assistance.',
+          'Perform mechanical stress test before returning to full daily service.'
+        ],
+        toolsNote: 'Basic hand tools, appropriate adhesive/thread, safety glasses'
+      };
     }
 
-    // Tangible real-world equivalence metrics
-    const treeAbsorptionDays = Math.round((co2AvoidedKg / 21) * 365); // 1 tree absorbs ~21kg CO2/year
-    const smartphoneCharges = Math.round(co2AvoidedKg * 120); // ~8g CO2 per smartphone charge
-    const milesDriven = Math.round(co2AvoidedKg * 2.5); // ~0.4kg CO2 per passenger car mile
+    if (verdict === 'REUSE') {
+      return {
+        mode: 'Recommended Action: Creative Upcycling & Second Life',
+        steps: [
+          'Deconstruct sound structural components (planks, denim twill, sheet metal).',
+          'Explore the Upcycling Studio showcase below for step-by-step transformation templates.',
+          'Sanitize or sand surfaces to prep for secondary household utility.',
+          'Alternatively, donate to a community school, maker space, or tool library.'
+        ],
+        toolsNote: 'Utility scissors / saw, Sandpaper, Cleaning supplies'
+      };
+    }
 
     return {
-      co2AvoidedKg,
-      wasteDivertedKg,
-      waterLitersSaved,
-      equivalencies: {
-        treeDays: Math.max(1, treeAbsorptionDays),
-        smartphoneCharges,
-        milesDriven
-      }
+      mode: 'Recommended Action: Certified Circular Recycling',
+      steps: [
+        'Disassemble and separate mixed materials (unscrew plastics from metal chassis).',
+        'Check our local Repair & Drop-Off Directory below for certified recycling depots.',
+        'Drop off for scrap material smelting, preventing virgin ore depletion.',
+        'Choose replacement products rated 8/10 or higher for repairability.'
+      ],
+      toolsNote: 'Screwdriver, Sorting containers'
     };
   }
 
-  generateActionPlan(verdict, category, materialKey, userSkill, severity, itemTitle) {
-    const isPro = userSkill === 'hire_pro';
-    const isNovice = userSkill === 'beginner';
-
-    if (verdict === 'REPAIR') {
-      return {
-        mode: isPro ? 'Professional Service' : 'DIY / Community Fix',
-        difficultyBadge: isNovice ? 'Gentle DIY' : 'Moderate Handiwork',
-        estimatedTime: isNovice ? '45 - 90 minutes' : '30 - 60 minutes',
-        keySteps: [
-          'Inspect & clean the damaged area thoroughly before beginning.',
-          'Secure matching fasteners, glue, adhesive, or certified replacement components.',
-          isPro 
-            ? 'Book a consultation with a local specialized technician or community repair cafe.' 
-            : 'Follow an open-source visual teardown guide (e.g., iFixit, YouTube Maker).',
-          'Test mechanical integrity and stress-load under controlled conditions.'
-        ],
-        toolsNeeded: this.getRecommendedTools(category.id, materialKey),
-        cautionNote: 'Always disconnect power sources and wear protective eyewear during mechanical or chemical tasks.'
-      };
-    } else if (verdict === 'REUSE') {
-      return {
-        mode: 'Creative Upcycling / Repurposing',
-        difficultyBadge: 'Creative Craft',
-        estimatedTime: '1 - 2 hours',
-        keySteps: [
-          'Deconstruct non-reusable parts and sort into proper local recycling streams.',
-          'Clean, sand, or sanitize reusable structural materials (wood, denim, metal).',
-          'Adapt mounting holes, stitch new hemline, or reflash software for secondary role.',
-          'Celebrate the piece’s heritage — visible wear tells a characterful story!'
-        ],
-        toolsNeeded: ['Basic utility knife / scissors', 'Measuring tape', 'Sandpaper / Surface cleaner', 'Mounting hardware or glue'],
-        cautionNote: 'Ensure item is sanitized and all sharp burrs or frayed wires are removed before repurposing.'
-      };
-    } else {
-      return {
-        mode: 'Responsible Replacement & Certified Recycling',
-        difficultyBadge: 'Eco-Retirement',
-        estimatedTime: '15 - 30 minutes',
-        keySteps: [
-          'Do not place into regular landfill garbage bins.',
-          'Locate an authorized recycling drop-off (e-waste, metal scrap, or textile bank).',
-          'Wipe any personal data (if electronics) or detach hazardous batteries first.',
-          'Invest in a "Buy-It-For-Life" replacement featuring repairable screws and spare parts availability.'
-        ],
-        toolsNeeded: ['Recycling bin bag', 'Protective gloves (if glass/damaged foam)'],
-        cautionNote: 'Never burn or incinerate synthetic plastics, treated wood, or electronics.'
-      };
-    }
-  }
-
-  getRecommendedTools(categoryId, materialKey) {
-    switch (categoryId) {
-      case 'furniture':
-        return ['PVA Wood Glue / Epoxy', 'Quick-Grip Bar Clamps', 'Fine 220-Grit Sandpaper', 'Rubber Mallet'];
-      case 'clothing':
-        return ['Fabric Scissors', 'Heavy-Duty Needle & Thread', 'Sashiko / Denim Patch', 'Iron-on Bonding Tape'];
-      case 'electronics':
-        return ['Precision Screwdriver Set (Torx/Phillips)', 'Plastic Pry Spudger', '99% Isopropyl Alcohol', 'Tweezers'];
-      case 'kitchen':
-        return ['Non-abrasive scour pad', 'Food-safe mineral or flaxseed oil', 'High-heat baking oven', 'Diamond sharpening stone'];
-      case 'mechanical':
-        return ['Metric Hex / Allen Keys (4,5,6mm)', 'Cable Cutter', 'Chain Degreaser & Dry Lube', 'Adjustable Wrench'];
-      case 'hardware':
-        return ['Plumber’s Teflon Tape', 'Channel-lock Pliers', 'Replacement Rubber O-rings', 'White Vinegar Descaler'];
+  generateFallbackGuidance(actionZone, itemName, materialName) {
+    switch (actionZone) {
+      case 'repair':
+        return {
+          headline: `Restore ${itemName} to Full Function`,
+          explanation: `Repairing the damaged ${materialName} restores utility and avoids premature replacement expenses.`,
+          steps: ['Inspect joint or mechanism.', 'Clean contact surfaces.', 'Fasten with standard hardware or adhesive.', 'Test load capacity.'],
+          tools: 'Basic household tools, adhesive / lubricant'
+        };
+      case 'reuse':
+        return {
+          headline: `Share or Reposition ${itemName}`,
+          explanation: `The object remains useful. Reposition for secondary utility or share via community library/swap.`,
+          steps: ['Clean and sanitize.', 'Donate to community swap or reassign to garage/workshop use.'],
+          tools: 'Cleaning cloth'
+        };
+      case 'repurpose':
+        return {
+          headline: `Creative Upcycling of ${itemName}`,
+          explanation: `The durable ${materialName} has high craft value. Transform into functional workshop or home decor utility.`,
+          steps: ['Disassemble unusable elements.', 'Prep raw material.', 'Adapt into organizer, planter, or storage.'],
+          tools: 'Utility saw / shears, Sandpaper'
+        };
+      case 'recycle':
+        return {
+          headline: `Certified Recycling of ${materialName}`,
+          explanation: `Separate distinct material layers and deliver to municipal reclamation facilities to recover virgin resources.`,
+          steps: ['Separate plastics and metals.', 'Deliver to certified civic recycling depot.'],
+          tools: 'Screwdriver / Pliers'
+        };
       default:
-        return ['General Multi-tool', 'Adhesive / Superglue', 'Cleaning Cloth'];
+        return {
+          headline: `Responsible Replacement for ${itemName}`,
+          explanation: `Retire responsibly and select a modular Buy-It-For-Life alternative built with serviceable standards.`,
+          steps: ['Deliver old item to certified scrap stream.', 'Invest in modular, repairable construction.'],
+          tools: 'Ethical buyer guide'
+        };
     }
   }
 }

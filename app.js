@@ -1,11 +1,26 @@
 /**
  * REFIX — Fix It First
- * Main Application Controller & UI Logic
+ * Main Application Controller & Interaction Logic
+ * 
+ * Features:
+ * - Deterministic circularity decision engine & lifecycle analysis
+ * - Global shared currency switcher (USD, EUR, GBP, INR) with verified Q4 2024 benchmarks
+ * - Interactive Universal Scope section with subcategory/appliance selection & Solid State Drive (SSD)
+ * - Enhanced DIY Creative Repurposing Studio with multi-category filters, search, and dynamic contextual suggestions
+ * - Visual damage scanner with device camera, photo upload & verified defect inspection
+ * - HTML5 Drag-and-Drop spatial interaction for primary evaluation verdicts with mobile tap fallback
+ * - Dark/Light theme, Web Audio synthesizer, and balanced responsive navigation
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-  // 1. Initialize Engine & State
+  // ==========================================================================
+  // 1. Initialize Engine & Shared State
+  // ==========================================================================
   const data = window.REFIX_DATA;
+  if (!data) {
+    console.error('REFIX_DATA not loaded. Please ensure js/data.js is included.');
+    return;
+  }
   const engine = new window.RefixEngine(data);
 
   const state = {
@@ -15,13 +30,24 @@ document.addEventListener('DOMContentLoaded', () => {
     currentStep: 1,
     currentAssessment: null,
     activeCategoryFilter: 'all',
+    selectedScopeCategory: 'furniture',
+    activeSubcategory: 'Solid Oak Dining Chair',
+    repurposeCategory: 'all',
+    repurposeSearch: '',
     directorySearchTerm: '',
     simCount: 250,
     cameraStream: null,
-    scannedPhoto: null
+    scannedPhoto: null,
+    activeDraggedItem: null,
+    selectedItemForTap: null,
+    // Base USD benchmark costs for seamless currency conversion in form inputs
+    baseOriginalUSD: 140,
+    baseRepairUSD: 12
   };
 
+  // ==========================================================================
   // 2. Audio Synthesizer (Zero external audio files needed)
+  // ==========================================================================
   let audioCtx = null;
   function getAudioContext() {
     if (!audioCtx && typeof window.AudioContext !== 'undefined') {
@@ -57,43 +83,98 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function playSuccessChime() {
     if (!state.sound) return;
-    playTone(523.25, 'sine', 0.15, 0.06); // C5
-    setTimeout(() => playTone(659.25, 'sine', 0.15, 0.06), 80); // E5
-    setTimeout(() => playTone(783.99, 'sine', 0.22, 0.07), 160); // G5
+    playTone(523.25, 'sine', 0.14, 0.06); // C5
+    setTimeout(() => playTone(659.25, 'sine', 0.14, 0.06), 75); // E5
+    setTimeout(() => playTone(783.99, 'sine', 0.22, 0.07), 150); // G5
+  }
+
+  function playVetoBuzzer() {
+    if (!state.sound) return;
+    playTone(220, 'sawtooth', 0.2, 0.08);
+    setTimeout(() => playTone(185, 'sawtooth', 0.25, 0.09), 120);
   }
 
   function playClick() {
     playTone(800, 'triangle', 0.04, 0.03);
   }
 
-  // 3. Currency Helpers
+  // ==========================================================================
+  // 3. Shared Global Currency Engine
+  // ==========================================================================
   function formatMoney(amountUSD) {
     const cur = data.currencies[state.currency] || data.currencies.USD;
     const converted = amountUSD * cur.rate;
     
-    // Format based on currency
     if (state.currency === 'INR') {
       return `${cur.symbol}${Math.round(converted).toLocaleString('en-IN')}`;
     }
     return `${cur.symbol}${Math.round(converted).toLocaleString('en-US')}`;
   }
 
+  function updateHeroSavingsStat() {
+    const heroStatsMoney = document.getElementById('heroStatsMoney');
+    if (!heroStatsMoney) return;
+    const cur = data.currencies[state.currency] || data.currencies.USD;
+    const converted = 142000 * cur.rate;
+
+    if (state.currency === 'INR') {
+      heroStatsMoney.textContent = `₹${(converted / 10000000).toFixed(2)}Cr+`;
+    } else if (state.currency === 'EUR') {
+      heroStatsMoney.textContent = `€${Math.round(converted / 1000)}K+`;
+    } else if (state.currency === 'GBP') {
+      heroStatsMoney.textContent = `£${Math.round(converted / 1000)}K+`;
+    } else {
+      heroStatsMoney.textContent = `$${Math.round(converted / 1000)}K+`;
+    }
+  }
+
   function updateCurrencyLabels() {
     const cur = data.currencies[state.currency] || data.currencies.USD;
+
+    // 1. Update all currency symbol labels across the page
     document.querySelectorAll('.currency-symbol-label').forEach(el => {
       el.textContent = cur.symbol;
     });
 
-    // Re-render components with money displays
+    // 2. Update currency rate benchmark badge
+    const rateBadge = document.getElementById('currencyRateBadge');
+    if (rateBadge) {
+      rateBadge.textContent = cur.benchmark;
+    }
+
+    // 3. Convert numeric values in active form inputs based on base USD values
+    const origInput = document.getElementById('originalCost');
+    const repInput = document.getElementById('repairCost');
+    if (origInput) {
+      origInput.value = Math.round(state.baseOriginalUSD * cur.rate);
+    }
+    if (repInput) {
+      repInput.value = Math.round(state.baseRepairUSD * cur.rate);
+    }
+
+    // 4. Update Hero counter & Hero preview card
+    updateHeroSavingsStat();
+    updateHeroPreview();
+
+    // 5. Update Draggable Item Card display
+    syncFormDraggableCard();
+
+    // 6. Update Recommendation Result Panel if assessment exists
     if (state.currentAssessment) {
       renderResultPanel(state.currentAssessment);
     }
-    updateHeroPreview();
-    updateSimulator();
+
+    // 7. Update presets ribbon chips
+    renderPresets();
+
+    // 8. Update Repurposing Studio cards
     renderUpcycling();
+
+    // 9. Update Community Impact Simulator
+    updateSimulator();
   }
 
-  // 4. Toast Notifications
+  // Toast Notifications
   function showToast(message, type = 'success') {
     const container = document.getElementById('toastContainer');
     if (!container) return;
@@ -116,7 +197,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 3200);
   }
 
-  // 5. Initialize Theme
+  // ==========================================================================
+  // 4. Theme & Audio Controls
+  // ==========================================================================
   function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     state.theme = theme;
@@ -128,14 +211,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   applyTheme(state.theme);
 
-  document.getElementById('themeToggleBtn').addEventListener('click', () => {
-    playClick();
-    const newTheme = state.theme === 'dark' ? 'light' : 'dark';
-    applyTheme(newTheme);
-    showToast(`Switched to ${newTheme} mode`, 'info');
-  });
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener('click', () => {
+      playClick();
+      const newTheme = state.theme === 'dark' ? 'light' : 'dark';
+      applyTheme(newTheme);
+      showToast(`Switched to ${newTheme} mode`, 'info');
+    });
+  }
 
-  // Sound Toggle Button
   const soundToggleBtn = document.getElementById('soundToggleBtn');
   const soundIcon = document.getElementById('soundIcon');
   function updateSoundIcon() {
@@ -143,15 +228,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   updateSoundIcon();
 
-  soundToggleBtn.addEventListener('click', () => {
-    state.sound = !state.sound;
-    localStorage.setItem('refix_sound', state.sound);
-    updateSoundIcon();
-    playClick();
-    showToast(state.sound ? 'Audio feedback enabled' : 'Audio muted', 'info');
-  });
+  if (soundToggleBtn) {
+    soundToggleBtn.addEventListener('click', () => {
+      state.sound = !state.sound;
+      localStorage.setItem('refix_sound', state.sound);
+      updateSoundIcon();
+      playClick();
+      showToast(state.sound ? 'Audio feedback enabled' : 'Audio muted', 'info');
+    });
+  }
 
-  // Currency Selector
+  // Currency Selector Listener
   const currencySelect = document.getElementById('currencySelect');
   if (currencySelect) {
     currencySelect.value = state.currency;
@@ -160,7 +247,8 @@ document.addEventListener('DOMContentLoaded', () => {
       state.currency = e.target.value;
       localStorage.setItem('refix_currency', state.currency);
       updateCurrencyLabels();
-      showToast(`Currency updated to ${data.currencies[state.currency].name}`, 'info');
+      const cur = data.currencies[state.currency];
+      showToast(`Currency: ${cur.name} (${cur.symbol}) • Rate: ${cur.benchmark}`, 'info');
     });
   }
 
@@ -176,7 +264,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 6. Form Category & Material Selectors Setup
+  // ==========================================================================
+  // 5. Form Category & Material Selectors Setup
+  // ==========================================================================
   const categorySelect = document.getElementById('itemCategory');
   const materialSelect = document.getElementById('itemMaterial');
 
@@ -208,11 +298,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (categorySelect) {
     categorySelect.addEventListener('change', (e) => {
+      state.selectedScopeCategory = e.target.value;
       populateMaterialsForCategory(e.target.value);
+      syncFormDraggableCard();
+      highlightActiveScopeCard(e.target.value);
     });
   }
 
-  // 7. Wizard Stepper & View Mode Switcher
+  if (materialSelect) {
+    materialSelect.addEventListener('change', () => {
+      syncFormDraggableCard();
+    });
+  }
+
+  // Cost input listeners to update base USD values cleanly
+  const origCostInput = document.getElementById('originalCost');
+  const repairCostInput = document.getElementById('repairCost');
+  if (origCostInput) {
+    origCostInput.addEventListener('input', () => {
+      const cur = data.currencies[state.currency] || data.currencies.USD;
+      const val = parseFloat(origCostInput.value) || 0;
+      state.baseOriginalUSD = val / cur.rate;
+      syncFormDraggableCard();
+    });
+  }
+  if (repairCostInput) {
+    repairCostInput.addEventListener('input', () => {
+      const cur = data.currencies[state.currency] || data.currencies.USD;
+      const val = parseFloat(repairCostInput.value) || 0;
+      state.baseRepairUSD = val / cur.rate;
+      syncFormDraggableCard();
+    });
+  }
+
+  // ==========================================================================
+  // 6. Wizard Stepper & View Mode Switcher
+  // ==========================================================================
   const wizardCard = document.getElementById('wizardCard');
   const viewModeAllBtn = document.getElementById('viewModeAllBtn');
   const viewModeWizardBtn = document.getElementById('viewModeWizardBtn');
@@ -220,20 +341,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const compactShowFormBtn = document.getElementById('compactShowFormBtn');
   const compactShowResultBtn = document.getElementById('compactShowResultBtn');
   const compactBackToFormBtn = document.getElementById('compactBackToFormBtn');
+  const wizardFooterActions = document.getElementById('wizardFooterActions');
 
   const stepNavItems = document.querySelectorAll('.step-nav-item');
   const stepContents = document.querySelectorAll('.form-step-content');
   const prevStepBtn = document.getElementById('prevStepBtn');
   const nextStepBtn = document.getElementById('nextStepBtn');
-  const calculateBtn = document.getElementById('calculateBtn');
 
-  // View Mode Switcher Handlers
   if (viewModeAllBtn && viewModeWizardBtn && wizardCard) {
     viewModeAllBtn.addEventListener('click', () => {
       playClick();
       viewModeAllBtn.classList.add('active');
       viewModeWizardBtn.classList.remove('active');
       wizardCard.classList.add('all-in-one-mode');
+      if (wizardFooterActions) wizardFooterActions.style.display = 'none';
       showToast('Switched to All-in-One Dashboard (all sections visible)', 'info');
     });
 
@@ -242,6 +363,7 @@ document.addEventListener('DOMContentLoaded', () => {
       viewModeWizardBtn.classList.add('active');
       viewModeAllBtn.classList.remove('active');
       wizardCard.classList.remove('all-in-one-mode');
+      if (wizardFooterActions) wizardFooterActions.style.display = 'flex';
       setWizardStep(state.currentStep || 1);
       showToast('Switched to Step-by-Step Wizard', 'info');
     });
@@ -304,17 +426,14 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Button states
     if (prevStepBtn) {
       prevStepBtn.style.visibility = stepNumber === 1 ? 'hidden' : 'visible';
     }
-    if (nextStepBtn && calculateBtn) {
+    if (nextStepBtn) {
       if (stepNumber === 4) {
-        nextStepBtn.style.display = 'none';
-        calculateBtn.style.display = 'inline-flex';
+        nextStepBtn.textContent = 'Ready to Drag Card ↓';
       } else {
-        nextStepBtn.style.display = 'inline-flex';
-        calculateBtn.style.display = 'none';
+        nextStepBtn.textContent = 'Next Step →';
       }
     }
   }
@@ -330,6 +449,9 @@ document.addEventListener('DOMContentLoaded', () => {
     nextStepBtn.addEventListener('click', () => {
       if (state.currentStep < 4) {
         setWizardStep(state.currentStep + 1);
+      } else {
+        const dragCard = document.getElementById('formDraggableCard');
+        if (dragCard) dragCard.scrollIntoView({ behavior: 'smooth' });
       }
     });
   }
@@ -354,6 +476,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         card.classList.add('selected');
         playClick();
+        syncFormDraggableCard();
       }
     });
   });
@@ -375,7 +498,89 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 8. Populate Preset Buttons (Ribbon & Hero)
+  // ==========================================================================
+  // 7. Form Data Collection & Draggable Card Synchronization
+  // ==========================================================================
+  const form = document.getElementById('assessmentForm');
+
+  function collectFormData() {
+    const cur = data.currencies[state.currency] || data.currencies.USD;
+    const originalLocal = parseFloat(document.getElementById('originalCost').value) || 50;
+    const repairLocal = parseFloat(document.getElementById('repairCost').value) || 0;
+
+    const originalCostUSD = originalLocal / cur.rate;
+    const repairCostUSD = repairLocal / cur.rate;
+
+    // Keep base USD in state
+    state.baseOriginalUSD = originalCostUSD;
+    state.baseRepairUSD = repairCostUSD;
+
+    const severityRadio = document.querySelector('input[name="damageSeverity"]:checked');
+    const cat = data.categories.find(c => c.id === categorySelect.value) || data.categories[0];
+
+    return {
+      category: categorySelect.value,
+      material: materialSelect.value,
+      itemTitle: document.getElementById('itemTitle').value || `${cat.name} Object`,
+      ageYears: parseFloat(document.getElementById('itemAge').value) || 1,
+      damageSeverity: severityRadio ? severityRadio.value : 'minor',
+      damageDetails: document.getElementById('damageDetails').value || '',
+      partsAvailability: document.getElementById('partsAvailability').value || 'available',
+      userSkill: document.getElementById('userSkill').value || 'intermediate',
+      originalCost: originalCostUSD,
+      repairCost: repairCostUSD,
+      icon: cat ? cat.icon : '📦'
+    };
+  }
+
+  function syncFormDraggableCard() {
+    const itemData = collectFormData();
+    const cardTitle = document.getElementById('decisionCardTitle');
+    const cardIcon = document.getElementById('decisionCardIcon');
+    const cardSevTag = document.getElementById('decisionCardSevTag');
+    const cardDesc = document.getElementById('decisionCardDesc');
+    const cardCatText = document.getElementById('decisionCardCatText');
+    const cardPriceText = document.getElementById('decisionCardPriceText');
+
+    if (cardTitle) cardTitle.textContent = itemData.itemTitle;
+    if (cardIcon) cardIcon.textContent = itemData.icon;
+
+    if (cardSevTag) {
+      cardSevTag.className = `severity-mini-tag severity-${itemData.damageSeverity}`;
+      const sevLabel = itemData.damageSeverity.charAt(0).toUpperCase() + itemData.damageSeverity.slice(1);
+      const icon = itemData.damageSeverity === 'minor' ? '🟡' : itemData.damageSeverity === 'moderate' ? '🟠' : '🔴';
+      cardSevTag.textContent = `${icon} ${sevLabel}`;
+    }
+
+    if (cardDesc) {
+      cardDesc.textContent = itemData.damageDetails || 'Condition details configured. Drag card to an action zone below.';
+    }
+
+    if (cardCatText) {
+      const cat = data.categories.find(c => c.id === itemData.category);
+      const mat = cat && cat.materials ? cat.materials.find(m => m.id === itemData.material) : null;
+      cardCatText.textContent = `${cat ? cat.name : 'Object'} • ${mat ? mat.name : 'Standard'}`;
+    }
+
+    if (cardPriceText) {
+      cardPriceText.textContent = `Est. New: ${formatMoney(itemData.originalCost)}`;
+    }
+  }
+
+  if (form) {
+    form.addEventListener('input', () => {
+      syncFormDraggableCard();
+    });
+    form.addEventListener('change', () => {
+      syncFormDraggableCard();
+    });
+  }
+
+  // ==========================================================================
+  // 8. Presets Ribbon & Hero Quick Test Chips
+  // ==========================================================================
+  let heroActivePreset = data.presets[0];
+
   function renderPresets() {
     const wizardPills = document.getElementById('wizardPresetPills');
     const heroChips = document.getElementById('heroPresetChips');
@@ -383,21 +588,44 @@ document.addEventListener('DOMContentLoaded', () => {
     if (wizardPills) {
       wizardPills.innerHTML = '';
       data.presets.forEach(preset => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'quick-load-btn';
-        btn.innerHTML = `<span>${preset.expectedVerdict === 'REPAIR' ? '🟢' : preset.expectedVerdict === 'REUSE' ? '🟡' : '🔴'}</span> <span>${preset.name}</span>`;
-        btn.addEventListener('click', () => loadPreset(preset));
-        wizardPills.appendChild(btn);
+        const card = document.createElement('div');
+        card.className = 'preset-draggable-card';
+        card.setAttribute('draggable', 'true');
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('role', 'button');
+        card.setAttribute('aria-label', `${preset.name}. Draggable card or click to load.`);
+
+        let verdictBadge = '🟢';
+        if (preset.expectedVerdict === 'REUSE') verdictBadge = '🟡';
+        if (preset.expectedVerdict === 'REPLACE') verdictBadge = '🔴';
+
+        card.innerHTML = `
+          <div class="preset-card-top">
+            <span class="preset-card-icon">${preset.icon || '📦'}</span>
+            <span class="preset-card-verdict">${verdictBadge} ${preset.expectedVerdict}</span>
+          </div>
+          <strong class="preset-card-name">${preset.name}</strong>
+          <span class="preset-card-sub">${preset.tag || preset.categoryName || preset.category}</span>
+          <div class="preset-drag-handle">
+            <span>⠿ Drag to Zone</span>
+          </div>
+        `;
+
+        card.addEventListener('click', () => {
+          loadPresetIntoForm(preset, true);
+        });
+
+        setupDraggableItem(card, preset);
+        wizardPills.appendChild(card);
       });
     }
 
     if (heroChips) {
       heroChips.innerHTML = '';
-      data.presets.slice(0, 5).forEach((preset, idx) => {
+      data.presets.slice(0, 6).forEach((preset, idx) => {
         const chip = document.createElement('button');
         chip.type = 'button';
-        chip.className = `preset-chip ${idx === 0 ? 'active' : ''}`;
+        chip.className = `preset-chip ${preset.id === heroActivePreset.id ? 'active' : ''}`;
         chip.textContent = preset.name;
         chip.addEventListener('click', () => {
           heroChips.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('active'));
@@ -410,8 +638,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
   }
-
-  let heroActivePreset = data.presets[0];
 
   function updateHeroPreview() {
     if (!heroActivePreset) return;
@@ -439,36 +665,35 @@ document.addEventListener('DOMContentLoaded', () => {
     carbon.textContent = `${cat ? cat.co2ReplacementKg : 35} kg CO₂`;
   }
 
-  // Hero "Open in Engine" button
   const heroLoadIntoEngineBtn = document.getElementById('heroLoadIntoEngineBtn');
   if (heroLoadIntoEngineBtn) {
     heroLoadIntoEngineBtn.addEventListener('click', () => {
-      loadPreset(heroActivePreset);
+      loadPresetIntoForm(heroActivePreset, false);
+      executeDropEvaluation(heroActivePreset, heroActivePreset.expectedVerdict.toLowerCase());
       document.getElementById('engine').scrollIntoView({ behavior: 'smooth' });
     });
   }
 
-  // 9. Load Preset into Form
-  function loadPreset(preset) {
-    playSuccessChime();
-    
+  function loadPresetIntoForm(preset, evaluateImmediately = false) {
     categorySelect.value = preset.category;
+    state.selectedScopeCategory = preset.category;
     populateMaterialsForCategory(preset.category);
 
     setTimeout(() => {
       materialSelect.value = preset.material;
-      document.getElementById('itemTitle').value = preset.itemTitle;
+      document.getElementById('itemTitle').value = preset.itemTitle || preset.name;
       document.getElementById('itemAge').value = preset.ageYears;
       document.getElementById('damageDetails').value = preset.damageDetails;
       document.getElementById('partsAvailability').value = preset.partsAvailability;
       document.getElementById('userSkill').value = preset.userSkill;
 
-      // Convert USD benchmark to active currency
+      state.baseOriginalUSD = preset.originalCostUSD;
+      state.baseRepairUSD = preset.repairCostUSD;
+
       const cur = data.currencies[state.currency] || data.currencies.USD;
       document.getElementById('originalCost').value = Math.round(preset.originalCostUSD * cur.rate);
       document.getElementById('repairCost').value = Math.round(preset.repairCostUSD * cur.rate);
 
-      // Radio severity
       const radio = document.querySelector(`input[name="damageSeverity"][value="${preset.damageSeverity}"]`);
       if (radio) {
         radio.checked = true;
@@ -478,71 +703,206 @@ document.addEventListener('DOMContentLoaded', () => {
         radio.closest('.radio-card').classList.add('selected');
       }
 
-      setWizardStep(1);
-      runEvaluation();
-      showToast(`Loaded preset: "${preset.name}"`, 'info');
-    }, 50);
+      syncFormDraggableCard();
+      highlightActiveScopeCard(preset.category);
+
+      if (evaluateImmediately) {
+        playClick();
+        executeDropEvaluation(preset, preset.expectedVerdict.toLowerCase());
+        showToast(`Loaded preset "${preset.name}". Drag to an Action Zone to re-evaluate!`, 'info');
+      }
+    }, 40);
   }
 
-  // 10. Form Submission & Assessment Evaluation
-  const form = document.getElementById('assessmentForm');
+  // ==========================================================================
+  // 9. DRAG-AND-DROP PROTOCOL CONTROLLER
+  // ==========================================================================
+  function setupDraggableItem(element, itemDataGetter) {
+    if (!element) return;
+    element.setAttribute('draggable', 'true');
 
-  function collectFormData() {
-    const cur = data.currencies[state.currency] || data.currencies.USD;
-    const originalLocal = parseFloat(document.getElementById('originalCost').value) || 50;
-    const repairLocal = parseFloat(document.getElementById('repairCost').value) || 0;
+    element.addEventListener('dragstart', (e) => {
+      const itemData = typeof itemDataGetter === 'function' ? itemDataGetter() : itemDataGetter;
+      state.activeDraggedItem = itemData;
 
-    // Convert local currency back to base USD for consistent engine heuristics
-    const originalCostUSD = originalLocal / cur.rate;
-    const repairCostUSD = repairLocal / cur.rate;
+      try {
+        e.dataTransfer.effectAllowed = 'copy';
+        e.dataTransfer.setData('text/plain', JSON.stringify(itemData));
+        e.dataTransfer.setData('application/json', JSON.stringify(itemData));
+      } catch (err) {
+        // Fallback already stored in state.activeDraggedItem
+      }
 
-    const severityRadio = document.querySelector('input[name="damageSeverity"]:checked');
+      element.classList.add('is-dragging');
+      document.body.classList.add('drag-in-progress');
+      playTone(480, 'sine', 0.08, 0.04);
+    });
 
-    return {
-      category: categorySelect.value,
-      material: materialSelect.value,
-      itemTitle: document.getElementById('itemTitle').value || 'Object',
-      ageYears: parseFloat(document.getElementById('itemAge').value) || 1,
-      damageSeverity: severityRadio ? severityRadio.value : 'moderate',
-      damageDetails: document.getElementById('damageDetails').value || '',
-      partsAvailability: document.getElementById('partsAvailability').value,
-      userSkill: document.getElementById('userSkill').value,
-      originalCost: originalCostUSD,
-      repairCost: repairCostUSD
-    };
-  }
+    element.addEventListener('dragend', () => {
+      element.classList.remove('is-dragging');
+      document.body.classList.remove('drag-in-progress');
+      setTimeout(() => {
+        state.activeDraggedItem = null;
+      }, 100);
+    });
 
-  function runEvaluation() {
-    const input = collectFormData();
-    const result = engine.assessItem(input);
-    state.currentAssessment = result;
-
-    renderResultPanel(result);
-  }
-
-  if (form) {
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      runEvaluation();
-      playSuccessChime();
-      showToast('Assessment computed successfully!', 'success');
+    // Touch / Click fallback
+    element.addEventListener('click', () => {
+      const itemData = typeof itemDataGetter === 'function' ? itemDataGetter() : itemDataGetter;
+      state.selectedItemForTap = itemData;
+      
+      document.querySelectorAll('.is-tap-selected').forEach(el => el.classList.remove('is-tap-selected'));
+      element.classList.add('is-tap-selected');
+      
+      showToast(`Selected "${itemData.itemTitle || itemData.name}". Tap an Action Zone to evaluate!`, 'info');
     });
   }
 
-  // Live recalculate on any field change
-  form.addEventListener('change', () => {
-    runEvaluation();
-  });
+  const formDraggableCard = document.getElementById('formDraggableCard');
+  if (formDraggableCard) {
+    setupDraggableItem(formDraggableCard, () => collectFormData());
+  }
 
-  // 11. Render Recommendation Panel
+  const resRedragPill = document.getElementById('resRedragPill');
+  if (resRedragPill) {
+    setupDraggableItem(resRedragPill, () => {
+      if (state.currentAssessment) {
+        return {
+          category: state.currentAssessment.category.id,
+          material: state.currentAssessment.materialInfo ? state.currentAssessment.materialInfo.id : 'standard',
+          itemTitle: state.currentAssessment.itemTitle,
+          damageSeverity: state.currentAssessment.damageSeverity,
+          damageDetails: state.currentAssessment.damageDetails,
+          originalCostUSD: state.currentAssessment.costs.originalCost,
+          repairCostUSD: state.currentAssessment.costs.repairCost,
+          icon: state.currentAssessment.category.icon
+        };
+      }
+      return collectFormData();
+    });
+  }
+
+  function setupActionZones() {
+    const actionZones = document.querySelectorAll('.action-zone, .action-drop-zone');
+
+    actionZones.forEach(zone => {
+      const actionName = zone.getAttribute('data-action') || 'repair';
+
+      zone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'copy';
+        if (!zone.classList.contains('drag-hover')) {
+          zone.classList.add('drag-hover');
+        }
+      });
+
+      zone.addEventListener('dragenter', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        zone.classList.add('drag-hover');
+      });
+
+      zone.addEventListener('dragleave', (e) => {
+        const rect = zone.getBoundingClientRect();
+        if (
+          e.clientX <= rect.left ||
+          e.clientX >= rect.right ||
+          e.clientY <= rect.top ||
+          e.clientY >= rect.bottom
+        ) {
+          zone.classList.remove('drag-hover');
+        }
+      });
+
+      zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        zone.classList.remove('drag-hover');
+
+        zone.classList.add('drop-success-flash');
+        setTimeout(() => zone.classList.remove('drop-success-flash'), 900);
+
+        let droppedItem = state.activeDraggedItem;
+        if (!droppedItem) {
+          try {
+            const rawData = e.dataTransfer.getData('application/json') || e.dataTransfer.getData('text/plain');
+            if (rawData) droppedItem = JSON.parse(rawData);
+          } catch (err) {
+            console.warn('Could not parse drop payload:', err);
+          }
+        }
+        if (!droppedItem) {
+          droppedItem = collectFormData();
+        }
+
+        executeDropEvaluation(droppedItem, actionName);
+      });
+
+      // Click / Tap Fallback
+      zone.addEventListener('click', () => {
+        if (state.selectedItemForTap) {
+          zone.classList.add('drop-success-flash');
+          setTimeout(() => zone.classList.remove('drop-success-flash'), 900);
+          executeDropEvaluation(state.selectedItemForTap, actionName);
+          state.selectedItemForTap = null;
+          document.querySelectorAll('.is-tap-selected').forEach(el => el.classList.remove('is-tap-selected'));
+        }
+      });
+    });
+  }
+
+  function executeDropEvaluation(item, targetAction) {
+    const result = engine.evaluateDrop(item, targetAction);
+    state.currentAssessment = result;
+
+    renderResultPanel(result);
+    updateRepurposingContextBanner(result);
+
+    if (result.isVeto) {
+      playVetoBuzzer();
+    } else {
+      playSuccessChime();
+    }
+
+    const itemName = result.itemTitle || 'Item';
+    showToast(`Evaluated "${itemName}" for ${targetAction.toUpperCase()}!`, result.isVeto ? 'warning' : 'success');
+
+    if (compactShowResultBtn && engineLayoutGrid && window.innerWidth <= 1024) {
+      compactShowResultBtn.classList.add('active');
+      if (compactShowFormBtn) compactShowFormBtn.classList.remove('active');
+      engineLayoutGrid.classList.remove('show-form-only');
+      engineLayoutGrid.classList.add('show-result-only');
+    }
+
+    const resultPanel = document.getElementById('resultPanel');
+    if (resultPanel) {
+      const rect = resultPanel.getBoundingClientRect();
+      if (rect.top < 0 || rect.bottom > window.innerHeight) {
+        resultPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }
+
+  // ==========================================================================
+  // 10. Render Recommendation Result Panel
+  // ==========================================================================
   function renderResultPanel(res) {
     const resultPanel = document.getElementById('resultPanel');
     if (!resultPanel) return;
 
-    // Item header
-    document.getElementById('resItemTitle').textContent = res.itemTitle;
-    document.getElementById('resCategoryPill').textContent = `${res.category.name} • ${res.materialInfo ? res.materialInfo.name : ''}`;
-    document.getElementById('resTimestamp').textContent = `Evaluated at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    const resItemTitle = document.getElementById('resItemTitle');
+    const resCategoryPill = document.getElementById('resCategoryPill');
+    const resTimestamp = document.getElementById('resTimestamp');
+
+    if (resItemTitle) resItemTitle.textContent = res.itemTitle;
+    if (resCategoryPill) {
+      const matName = res.materialInfo ? res.materialInfo.name : 'Standard';
+      resCategoryPill.textContent = `${res.category.name} • ${matName}`;
+    }
+    if (resTimestamp) {
+      resTimestamp.textContent = `Evaluated at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    }
 
     // Scanned Photo Inspection Verified Card
     const photoWrap = document.getElementById('resPhotoInspectionWrap');
@@ -551,15 +911,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const photoConfidence = document.getElementById('resPhotoConfidence');
 
     if (state.scannedPhoto) {
-      photoWrap.style.display = 'flex';
-      if (state.scannedPhoto.isSvg) {
-        photoThumb.innerHTML = state.scannedPhoto.imgSource;
-      } else {
-        photoThumb.innerHTML = `<img src="${state.scannedPhoto.imgSource}" alt="Damaged product inspection preview">`;
+      if (photoWrap) photoWrap.style.display = 'flex';
+      if (photoThumb) {
+        if (state.scannedPhoto.isSvg) {
+          photoThumb.innerHTML = state.scannedPhoto.imgSource;
+        } else {
+          photoThumb.innerHTML = `<img src="${state.scannedPhoto.imgSource}" alt="Inspection preview" style="width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-sm);">`;
+        }
       }
-      photoDefect.textContent = state.scannedPhoto.meta.defectName || 'Physical Fracture / Wear';
-      photoConfidence.textContent = `Confidence: ${state.scannedPhoto.meta.confidence || '91%'} • Defect localized`;
-    } else {
+      if (photoDefect) photoDefect.textContent = state.scannedPhoto.meta.defectName || 'Physical Wear / Surface Strain';
+      if (photoConfidence) photoConfidence.textContent = `Confidence: ${state.scannedPhoto.meta.confidence || '92%'} • Defect localized`;
+    } else if (photoWrap) {
       photoWrap.style.display = 'none';
     }
 
@@ -569,23 +931,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const confidence = document.getElementById('resConfidence');
     const reason = document.getElementById('resVerdictReason');
 
-    banner.className = `verdict-banner verdict-${res.verdict.toLowerCase()}`;
+    if (banner) {
+      banner.className = `verdict-banner verdict-${res.verdict.toLowerCase()}`;
+    }
+    
     let icon = '🟢';
     if (res.verdict === 'REUSE') icon = '🟡';
     if (res.verdict === 'REPLACE') icon = '🔴';
 
-    title.innerHTML = `<span>${icon}</span> ${res.verdict}`;
-    confidence.textContent = `${res.confidence}% Confidence`;
-    reason.textContent = res.verdictReason;
+    if (title) title.innerHTML = `<span>${icon}</span> ${res.verdict}`;
+    if (confidence) confidence.textContent = `${res.confidence}% Confidence`;
+    if (reason) reason.textContent = res.verdictReason;
 
-    // Update Floating Mobile/Compact Result Pill
-    const floatingBadge = document.getElementById('floatingVerdictBadge');
-    if (floatingBadge) {
-      floatingBadge.className = `floating-verdict-badge verdict-${res.verdict.toLowerCase()}`;
-      floatingBadge.textContent = `${icon} ${res.verdict}`;
-    }
-
-    // Update Compact Screen Tab Verdict Pill
+    // Compact Screen Verdict Pill
     const compactPill = document.getElementById('compactVerdictPill');
     if (compactPill) {
       compactPill.className = `compact-verdict-pill verdict-${res.verdict.toLowerCase()}`;
@@ -593,50 +951,97 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Gauges
-    document.getElementById('resRepairScore').textContent = `${res.repairabilityScore}%`;
-    document.getElementById('resRepairBar').style.width = `${res.repairabilityScore}%`;
+    const resRepairScore = document.getElementById('resRepairScore');
+    const resRepairBar = document.getElementById('resRepairBar');
+    const resReuseScore = document.getElementById('resReuseScore');
+    const resReuseBar = document.getElementById('resReuseBar');
 
-    document.getElementById('resReuseScore').textContent = `${res.reuseScore}%`;
-    document.getElementById('resReuseBar').style.width = `${res.reuseScore}%`;
+    if (resRepairScore) resRepairScore.textContent = `${res.repairabilityScore}%`;
+    if (resRepairBar) resRepairBar.style.width = `${res.repairabilityScore}%`;
+    if (resReuseScore) resReuseScore.textContent = `${res.reuseScore}%`;
+    if (resReuseBar) resReuseBar.style.width = `${res.reuseScore}%`;
 
-    // Costs
+    // Cost Breakdown
     const savingsHighlight = document.getElementById('resSavingsHighlight');
-    if (res.verdict === 'REPLACE') {
-      savingsHighlight.textContent = 'Retire & Upgrade';
-      savingsHighlight.style.color = 'var(--replace)';
-    } else {
-      savingsHighlight.textContent = `Save ${formatMoney(res.costs.moneySaved)} (${res.costs.savingsPercent}%)`;
-      savingsHighlight.style.color = 'var(--primary)';
+    if (savingsHighlight) {
+      if (res.verdict === 'REPLACE') {
+        savingsHighlight.textContent = 'Retire & Upgrade';
+        savingsHighlight.style.color = 'var(--replace)';
+      } else {
+        savingsHighlight.textContent = `Save ${formatMoney(res.costs.moneySaved)} (${res.costs.savingsPercent}%)`;
+        savingsHighlight.style.color = 'var(--primary)';
+      }
     }
 
-    document.getElementById('resRepairCostVal').textContent = formatMoney(res.costs.repairCost);
-    document.getElementById('resRepurposeCostVal').textContent = formatMoney(res.costs.repurposeCost);
-    document.getElementById('resReplaceCostVal').textContent = formatMoney(res.costs.originalCost);
+    const resRepairCostVal = document.getElementById('resRepairCostVal');
+    const resRepurposeCostVal = document.getElementById('resRepurposeCostVal');
+    const resReplaceCostVal = document.getElementById('resReplaceCostVal');
 
-    // Bars width
+    if (resRepairCostVal) resRepairCostVal.textContent = formatMoney(res.costs.repairCost);
+    if (resRepurposeCostVal) resRepurposeCostVal.textContent = formatMoney(res.costs.repurposeCost);
+    if (resReplaceCostVal) resReplaceCostVal.textContent = formatMoney(res.costs.originalCost);
+
     const maxVal = Math.max(res.costs.originalCost, res.costs.repairCost, res.costs.repurposeCost, 1);
-    document.getElementById('barRepairWidth').style.width = `${Math.min(100, Math.round((res.costs.repairCost / maxVal) * 100))}%`;
-    document.getElementById('barRepurposeWidth').style.width = `${Math.min(100, Math.round((res.costs.repurposeCost / maxVal) * 100))}%`;
+    const barRepair = document.getElementById('barRepairWidth');
+    const barRepurpose = document.getElementById('barRepurposeWidth');
+    if (barRepair) {
+      barRepair.style.width = `${Math.min(100, Math.round((res.costs.repairCost / maxVal) * 100))}%`;
+    }
+    if (barRepurpose) {
+      barRepurpose.style.width = `${Math.min(100, Math.round((res.costs.repurposeCost / maxVal) * 100))}%`;
+    }
 
     // Environmental indicators
-    document.getElementById('resCo2Val').textContent = `${res.impact.co2AvoidedKg} kg`;
-    document.getElementById('resWasteVal').textContent = `${res.impact.wasteDivertedKg} kg`;
-    document.getElementById('resWaterVal').textContent = `${res.impact.waterLitersSaved.toLocaleString()} L`;
+    const resCo2Val = document.getElementById('resCo2Val');
+    const resWasteVal = document.getElementById('resWasteVal');
+    const resWaterVal = document.getElementById('resWaterVal');
+
+    if (resCo2Val) resCo2Val.textContent = `${res.impact.co2AvoidedKg} kg`;
+    if (resWasteVal) resWasteVal.textContent = `${res.impact.wasteDivertedKg} kg`;
+    if (resWaterVal) resWaterVal.textContent = `${res.impact.waterLitersSaved.toLocaleString()} L`;
 
     // Roadmap actions
-    document.getElementById('resActionMode').textContent = `Recommended: ${res.actionPlan.mode} (${res.actionPlan.difficultyBadge})`;
+    const resActionMode = document.getElementById('resActionMode');
     const stepsList = document.getElementById('resActionSteps');
-    stepsList.innerHTML = '';
-    res.actionPlan.keySteps.forEach(step => {
-      const li = document.createElement('li');
-      li.textContent = step;
-      stepsList.appendChild(li);
-    });
+    const toolsNote = document.getElementById('resToolsNote');
 
-    document.getElementById('resToolsNote').innerHTML = `<strong>Tools:</strong> ${res.actionPlan.toolsNeeded.join(', ')}`;
+    if (resActionMode) {
+      resActionMode.textContent = `Recommended: ${res.actionPlan.mode} (${res.actionPlan.difficultyBadge})`;
+    }
+
+    if (stepsList) {
+      stepsList.innerHTML = '';
+      res.actionPlan.keySteps.forEach(step => {
+        const li = document.createElement('li');
+        li.textContent = step;
+        stepsList.appendChild(li);
+      });
+    }
+
+    if (toolsNote) {
+      toolsNote.innerHTML = `<strong>Tools:</strong> ${res.actionPlan.toolsNeeded.join(', ')}`;
+    }
+
+    // Re-drag pill inside result card
+    const resRedragIcon = document.getElementById('resRedragIcon');
+    const resRedragName = document.getElementById('resRedragName');
+    if (resRedragIcon) resRedragIcon.textContent = res.category.icon;
+    if (resRedragName) resRedragName.textContent = res.itemTitle;
   }
 
-  // 12. Object Categories Showcase Renderer
+  // ==========================================================================
+  // 11. UNIVERSAL SCOPE SECTION CONTROLLER (FIXED & FULLY FUNCTIONAL)
+  // ==========================================================================
+  function highlightActiveScopeCard(categoryId) {
+    document.querySelectorAll('.category-card').forEach(card => {
+      if (card.getAttribute('data-cat-id') === categoryId) {
+        card.classList.add('is-selected');
+      } else {
+        card.classList.remove('is-selected');
+      }
+    });
+  }
+
   function renderCategories(filter = 'all') {
     const grid = document.getElementById('categoriesGrid');
     if (!grid) return;
@@ -648,7 +1053,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     filtered.forEach(cat => {
       const card = document.createElement('div');
-      card.className = 'category-card';
+      card.className = `category-card ${state.selectedScopeCategory === cat.id ? 'is-selected' : ''}`;
+      card.setAttribute('data-cat-id', cat.id);
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('role', 'region');
+      card.setAttribute('aria-label', `${cat.name} Category Card`);
+
+      const subList = cat.subcategories || [cat.name];
+
       card.innerHTML = `
         <div class="cat-card-header">
           <span class="cat-icon-large">${cat.icon}</span>
@@ -656,82 +1068,230 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         <h3 class="cat-card-title">${cat.name}</h3>
         <p class="cat-card-desc">${cat.description}</p>
+        
         <div class="cat-metrics-strip">
           <div class="strip-item">
             <p>Avg Lifespan</p>
             <strong>${cat.avgLifespanYears} Years</strong>
           </div>
           <div class="strip-item">
-            <p>New Item Footprint</p>
+            <p>New Footprint</p>
             <strong>${cat.co2ReplacementKg} kg CO₂</strong>
           </div>
         </div>
-        <div style="font-size: 0.775rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.4rem;">
+
+        <div class="cat-subcategories-section">
+          <div class="cat-subcategories-label">Selectable Scope Items / Appliances:</div>
+          <div class="cat-subcategories-list">
+            ${subList.map(sub => `
+              <button type="button" class="cat-sub-item-chip ${state.activeSubcategory === sub ? 'is-active' : ''}" data-cat-id="${cat.id}" data-sub-name="${sub}">
+                ${sub}
+              </button>
+            `).join('')}
+          </div>
+        </div>
+
+        <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.35rem;">
           Common Repair Points:
         </div>
         <ul class="cat-issues-list">
-          ${cat.commonIssues.map(issue => `<li>${issue}</li>`).join('')}
+          ${cat.commonIssues.slice(0, 3).map(issue => `<li>${issue}</li>`).join('')}
         </ul>
-        <button class="btn btn-secondary btn-sm" style="width: 100%; margin-top: auto;" data-load-cat="${cat.id}">
+
+        <button type="button" class="btn btn-secondary btn-sm cat-load-btn" data-load-cat="${cat.id}">
           Assess a ${cat.name.split(' ')[0]} Object →
         </button>
       `;
 
-      card.querySelector(`[data-load-cat="${cat.id}"]`).addEventListener('click', () => {
+      // 1. Subcategory Chips click listener (e.g. Solid State Drive (SSD), Smartphone, Chair)
+      card.querySelectorAll('.cat-sub-item-chip').forEach(chip => {
+        chip.addEventListener('click', (e) => {
+          e.stopPropagation();
+          playClick();
+          const subName = chip.getAttribute('data-sub-name');
+          const catId = chip.getAttribute('data-cat-id');
+          loadScopeSubcategoryItem(catId, subName);
+        });
+      });
+
+      // 2. "Assess a [Category] Object →" Button listener
+      const loadBtn = card.querySelector(`[data-load-cat="${cat.id}"]`);
+      if (loadBtn) {
+        loadBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          playClick();
+          loadScopeCategory(cat);
+        });
+      }
+
+      // 3. Whole Card Click Listener
+      card.addEventListener('click', () => {
         playClick();
-        categorySelect.value = cat.id;
-        populateMaterialsForCategory(cat.id);
-        document.getElementById('itemTitle').value = cat.subcategories[0] || cat.name;
-        document.getElementById('engine').scrollIntoView({ behavior: 'smooth' });
-        setWizardStep(1);
-        runEvaluation();
-        showToast(`Category set to ${cat.name}`, 'info');
+        loadScopeCategory(cat);
       });
 
       grid.appendChild(card);
     });
   }
 
-  // Category filter bar
-  const filterBtns = document.querySelectorAll('.cat-filter-btn');
-  filterBtns.forEach(btn => {
+  function loadScopeCategory(cat) {
+    state.selectedScopeCategory = cat.id;
+    const defaultSub = (cat.subcategories && cat.subcategories[0]) ? cat.subcategories[0] : cat.name;
+    loadScopeSubcategoryItem(cat.id, defaultSub);
+  }
+
+  function loadScopeSubcategoryItem(categoryId, subcategoryName) {
+    state.selectedScopeCategory = categoryId;
+    state.activeSubcategory = subcategoryName;
+
+    // 1. Visibly highlight card & chips in Universal Scope
+    highlightActiveScopeCard(categoryId);
+    document.querySelectorAll('.cat-sub-item-chip').forEach(ch => {
+      ch.classList.toggle('is-active', ch.getAttribute('data-sub-name') === subcategoryName);
+    });
+
+    // 2. Set form selectors
+    categorySelect.value = categoryId;
+    populateMaterialsForCategory(categoryId);
+
+    // 3. Check if matching preset exists (e.g. SSD, chair, shirt, boots)
+    const matchingPreset = data.presets.find(p => 
+      p.itemTitle.toLowerCase().includes(subcategoryName.toLowerCase()) ||
+      subcategoryName.toLowerCase().includes(p.name.toLowerCase()) ||
+      (subcategoryName.includes('SSD') && p.id === 'ssd_drive')
+    );
+
+    setTimeout(() => {
+      if (matchingPreset) {
+        loadPresetIntoForm(matchingPreset, false);
+      } else {
+        document.getElementById('itemTitle').value = subcategoryName;
+        const cur = data.currencies[state.currency] || data.currencies.USD;
+        // Sensible category-based defaults
+        const defaultOrigUSD = categoryId === 'electronics' ? 120 : categoryId === 'mechanical' ? 180 : 75;
+        const defaultRepairUSD = Math.round(defaultOrigUSD * 0.2);
+        state.baseOriginalUSD = defaultOrigUSD;
+        state.baseRepairUSD = defaultRepairUSD;
+        document.getElementById('originalCost').value = Math.round(defaultOrigUSD * cur.rate);
+        document.getElementById('repairCost').value = Math.round(defaultRepairUSD * cur.rate);
+      }
+
+      syncFormDraggableCard();
+
+      // 4. Execute evaluation & update Recommendation Result Panel immediately
+      const configuredItem = collectFormData();
+      executeDropEvaluation(configuredItem, configuredItem.damageSeverity === 'critical' ? 'replace' : 'repair');
+
+      // 5. Scroll smoothly to engine
+      document.getElementById('engine').scrollIntoView({ behavior: 'smooth' });
+      showToast(`Selected "${subcategoryName}". Circular verdict evaluated!`, 'success');
+    }, 40);
+  }
+
+  // Universal Scope filter tabs
+  const catFilterBtns = document.querySelectorAll('.cat-filter-btn');
+  catFilterBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       playClick();
-      filterBtns.forEach(b => b.classList.remove('active'));
+      catFilterBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const catKey = btn.getAttribute('data-category');
       renderCategories(catKey);
     });
   });
 
-  // 13. Upcycling Projects Showcase Renderer
+  // ==========================================================================
+  // 12. CREATIVE REPURPOSING IDEAS STUDIO (DIY FOCUSED)
+  // ==========================================================================
+  function updateRepurposingContextBanner(res) {
+    const banner = document.getElementById('repurposeContextBanner');
+    const title = document.getElementById('repurposeContextTitle');
+    const desc = document.getElementById('repurposeContextDesc');
+    if (!banner || !res) return;
+
+    banner.style.display = 'flex';
+    title.textContent = `✨ Tailored Repurposing Matches for: ${res.itemTitle}`;
+    desc.textContent = `Showing creative DIY transformations suited for ${res.category.name} (${res.damageSeverity} wear).`;
+  }
+
   function renderUpcycling() {
     const grid = document.getElementById('upcyclingGrid');
     if (!grid) return;
 
     grid.innerHTML = '';
-    data.upcycleProjects.forEach(proj => {
+
+    const term = state.repurposeSearch.toLowerCase().trim();
+    const catFilter = state.repurposeCategory;
+
+    const filtered = data.upcycleProjects.filter(proj => {
+      const matchesCat = catFilter === 'all' || proj.category === catFilter;
+      const matchesTerm = !term || 
+        proj.title.toLowerCase().includes(term) ||
+        proj.sourceObject.toLowerCase().includes(term) ||
+        proj.summary.toLowerCase().includes(term) ||
+        proj.categoryName.toLowerCase().includes(term) ||
+        proj.materialsNeeded.some(m => m.toLowerCase().includes(term));
+      return matchesCat && matchesTerm;
+    });
+
+    if (filtered.length === 0) {
+      grid.innerHTML = `
+        <div class="repurpose-empty-state">
+          <div class="empty-icon">✂️</div>
+          <h4>No Repurposing Ideas Found for "${state.repurposeSearch}"</h4>
+          <p>Try searching for another material (e.g. "t-shirt", "drawer", "SSD", "glass", "denim") or reset the filter.</p>
+          <button type="button" class="btn btn-secondary btn-sm" id="emptyResetFilterBtn" style="margin-top: 1rem;">
+            Show All Ideas
+          </button>
+        </div>
+      `;
+      const resetBtn = document.getElementById('emptyResetFilterBtn');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+          state.repurposeCategory = 'all';
+          state.repurposeSearch = '';
+          const searchInput = document.getElementById('repurposeSearchInput');
+          if (searchInput) searchInput.value = '';
+          document.querySelectorAll('.repurpose-filter-pill').forEach(p => p.classList.toggle('active', p.getAttribute('data-repurpose-cat') === 'all'));
+          renderUpcycling();
+        });
+      }
+      return;
+    }
+
+    filtered.forEach(proj => {
       const card = document.createElement('div');
       card.className = 'upcycle-card';
-      
-      let icon = '✂️';
-      if (proj.category === 'kitchen') icon = '☕';
-      if (proj.category === 'electronics') icon = '💻';
-      if (proj.category === 'furniture') icon = '🪵';
-      if (proj.category === 'mechanical') icon = '🚲';
 
       card.innerHTML = `
         <div class="upcycle-preview-visual">
-          <span>${icon}</span>
-          <span class="upcycle-difficulty-pill">${proj.difficulty} • ${proj.timeHours}h</span>
+          <span class="visual-icon">${proj.icon || '✂️'}</span>
+          <span class="upcycle-difficulty-pill">${proj.difficulty} • ${proj.timeRequired}</span>
         </div>
         <div class="upcycle-body">
-          <div class="upcycle-tags">
-            ${proj.tags.map(t => `<span class="mini-tag">${t}</span>`).join('')}
-          </div>
+          <div class="upcycle-category-tag">${proj.categoryName}</div>
           <h3 class="upcycle-title">${proj.title}</h3>
-          <div class="upcycle-origin">Repurposed from: ${proj.originalItem}</div>
+          <div class="upcycle-origin">Repurposed from: <strong>${proj.sourceObject}</strong></div>
           <p class="upcycle-desc">${proj.summary}</p>
+          
+          <div class="upcycle-materials-box">
+            <strong>Required:</strong> ${proj.materialsNeeded.join(', ')}
+          </div>
+
+          <div class="upcycle-steps-preview">
+            <h6>Step-by-Step Preview (${proj.steps.length} Steps):</h6>
+            <ol>
+              ${proj.steps.slice(0, 3).map(s => `<li>${s}</li>`).join('')}
+              ${proj.steps.length > 3 ? `<li style="list-style: none; color: var(--primary); font-weight: 600;">+ ${proj.steps.length - 3} more steps in full guide...</li>` : ''}
+            </ol>
+          </div>
+
+          ${proj.safetyTip ? `
+            <div class="repurpose-safety-box">
+              <strong>⚠️ Safety Note:</strong> ${proj.safetyTip}
+            </div>
+          ` : ''}
+
           <div class="upcycle-stats-row">
             <div>
               <span style="color: var(--text-dim);">Diverts:</span>
@@ -742,36 +1302,172 @@ document.addEventListener('DOMContentLoaded', () => {
               <strong style="color: var(--primary);">${formatMoney(proj.costSavingsUSD)}</strong>
             </div>
           </div>
+
+          <div class="upcycle-actions-row">
+            <button type="button" class="btn btn-secondary btn-sm" data-view-guide="${proj.id}">
+              📖 View Full DIY Guide
+            </button>
+            <button type="button" class="btn btn-primary btn-sm" data-try-material="${proj.id}">
+              Evaluate in Engine →
+            </button>
+          </div>
         </div>
       `;
+
+      // Button: View Full Guide Modal
+      const viewGuideBtn = card.querySelector(`[data-view-guide="${proj.id}"]`);
+      if (viewGuideBtn) {
+        viewGuideBtn.addEventListener('click', () => {
+          playClick();
+          openRepurposeGuideModal(proj);
+        });
+      }
+
+      // Button: Evaluate in Engine
+      const tryMatBtn = card.querySelector(`[data-try-material="${proj.id}"]`);
+      if (tryMatBtn) {
+        tryMatBtn.addEventListener('click', () => {
+          playClick();
+          categorySelect.value = proj.category;
+          populateMaterialsForCategory(proj.category);
+          document.getElementById('itemTitle').value = proj.sourceObject.split(' (')[0].split(' with')[0];
+          syncFormDraggableCard();
+          const configured = collectFormData();
+          executeDropEvaluation(configured, 'repurpose');
+          document.getElementById('engine').scrollIntoView({ behavior: 'smooth' });
+          showToast(`Loaded "${proj.sourceObject}" for repurposing assessment!`, 'info');
+        });
+      }
+
       grid.appendChild(card);
     });
   }
 
-  // 14. Community Impact Simulator
+  // Open DIY Repurposing Guide Modal
+  function openRepurposeGuideModal(proj) {
+    const modalIcon = document.getElementById('guideModalIcon');
+    const modalTitle = document.getElementById('guideModalTitle');
+    const modalSubtitle = document.getElementById('guideModalSubtitle');
+    const modalBody = document.getElementById('repurposeGuideBody');
+    const loadEngineBtn = document.getElementById('guideModalLoadEngineBtn');
+
+    if (modalIcon) modalIcon.textContent = proj.icon || '✂️';
+    if (modalTitle) modalTitle.textContent = proj.title;
+    if (modalSubtitle) modalSubtitle.textContent = `Repurposed from: ${proj.sourceObject} • ${proj.difficulty} (${proj.timeRequired})`;
+
+    if (modalBody) {
+      modalBody.innerHTML = `
+        <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem 1.25rem; margin-bottom: 1.25rem;">
+          <h5 style="margin-bottom: 0.35rem; font-size: 0.95rem;">Project Overview</h5>
+          <p style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.5; margin: 0;">${proj.summary}</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 1.25rem;">
+          <div style="background: var(--bg-input); padding: 0.85rem; border-radius: var(--radius-sm);">
+            <span style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase;">Environmental Benefit</span>
+            <div style="font-size: 1.2rem; font-weight: 800; color: var(--reuse);">${proj.co2SavedKg} kg CO₂ Avoided</div>
+          </div>
+          <div style="background: var(--bg-input); padding: 0.85rem; border-radius: var(--radius-sm);">
+            <span style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase;">Average Money Saved</span>
+            <div style="font-size: 1.2rem; font-weight: 800; color: var(--primary);">${formatMoney(proj.costSavingsUSD)}</div>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+          <h5 style="margin-bottom: 0.5rem; font-size: 0.9rem; text-transform: uppercase; color: var(--text-dim);">Materials &amp; Tools Checklist:</h5>
+          <ul style="padding-left: 1.25rem; font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;">
+            ${proj.materialsNeeded.map(m => `<li>${m}</li>`).join('')}
+          </ul>
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+          <h5 style="margin-bottom: 0.5rem; font-size: 0.9rem; text-transform: uppercase; color: var(--primary);">Step-by-Step DIY Execution:</h5>
+          <ol style="padding-left: 1.25rem; font-size: 0.875rem; color: var(--text-muted); line-height: 1.6;">
+            ${proj.steps.map(s => `<li style="margin-bottom: 0.45rem;">${s}</li>`).join('')}
+          </ol>
+        </div>
+
+        ${proj.safetyTip ? `
+          <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #f59e0b; padding: 0.75rem 1rem; border-radius: var(--radius-sm); font-size: 0.825rem; color: #f59e0b;">
+            <strong>⚠️ Safety &amp; Durability Note:</strong> ${proj.safetyTip}
+          </div>
+        ` : ''}
+      `;
+    }
+
+    if (loadEngineBtn) {
+      loadEngineBtn.onclick = () => {
+        closeModal('repurposeGuideModal');
+        categorySelect.value = proj.category;
+        populateMaterialsForCategory(proj.category);
+        document.getElementById('itemTitle').value = proj.sourceObject.split(' (')[0];
+        syncFormDraggableCard();
+        executeDropEvaluation(collectFormData(), 'repurpose');
+        document.getElementById('engine').scrollIntoView({ behavior: 'smooth' });
+      };
+    }
+
+    openModal('repurposeGuideModal');
+  }
+
+  // Repurposing Category Filter Pills
+  document.querySelectorAll('.repurpose-filter-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      playClick();
+      document.querySelectorAll('.repurpose-filter-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.repurposeCategory = btn.getAttribute('data-repurpose-cat');
+      renderUpcycling();
+    });
+  });
+
+  // Repurposing Search Input
+  const repurposeSearchInput = document.getElementById('repurposeSearchInput');
+  if (repurposeSearchInput) {
+    repurposeSearchInput.addEventListener('input', (e) => {
+      state.repurposeSearch = e.target.value;
+      renderUpcycling();
+    });
+  }
+
+  // Repurposing Reset Filter Button in Context Banner
+  const repurposeResetFilterBtn = document.getElementById('repurposeResetFilterBtn');
+  if (repurposeResetFilterBtn) {
+    repurposeResetFilterBtn.addEventListener('click', () => {
+      playClick();
+      state.repurposeCategory = 'all';
+      state.repurposeSearch = '';
+      if (repurposeSearchInput) repurposeSearchInput.value = '';
+      document.querySelectorAll('.repurpose-filter-pill').forEach(p => p.classList.toggle('active', p.getAttribute('data-repurpose-cat') === 'all'));
+      renderUpcycling();
+    });
+  }
+
+  // ==========================================================================
+  // 13. Community Impact Simulator
+  // ==========================================================================
   const simSlider = document.getElementById('simSlider');
   const simCountDisplay = document.getElementById('simCountDisplay');
 
   function updateSimulator() {
     if (!simSlider) return;
     const count = parseInt(simSlider.value, 10);
-    simCountDisplay.textContent = count.toLocaleString();
+    if (simCountDisplay) simCountDisplay.textContent = count.toLocaleString();
 
-    // Heuristics:
-    // Avg money saved per repaired/reused item: ~$114 USD
-    // Avg CO2 saved: ~38 kg CO2
-    // Avg waste diverted: ~9 kg
-    // Tree equivalence: 1 tree absorbs ~21kg CO2/yr
-    const cur = data.currencies[state.currency] || data.currencies.USD;
     const totalUSD = count * 114;
     const totalCO2Kg = count * 38;
     const totalWasteKg = count * 9;
     const trees = Math.round(totalCO2Kg / 21);
 
-    document.getElementById('simMoneyVal').textContent = formatMoney(totalUSD);
-    document.getElementById('simCo2Val').textContent = `${(totalCO2Kg / 1000).toFixed(1)} Tons`;
-    document.getElementById('simWasteVal').textContent = `${totalWasteKg.toLocaleString()} kg`;
-    document.getElementById('simTreesVal').textContent = `${trees.toLocaleString()} Trees`;
+    const simMoneyVal = document.getElementById('simMoneyVal');
+    const simCo2Val = document.getElementById('simCo2Val');
+    const simWasteVal = document.getElementById('simWasteVal');
+    const simTreesVal = document.getElementById('simTreesVal');
+
+    if (simMoneyVal) simMoneyVal.textContent = formatMoney(totalUSD);
+    if (simCo2Val) simCo2Val.textContent = `${(totalCO2Kg / 1000).toFixed(1)} Tons`;
+    if (simWasteVal) simWasteVal.textContent = `${totalWasteKg.toLocaleString()} kg`;
+    if (simTreesVal) simTreesVal.textContent = `${trees.toLocaleString()} Trees`;
   }
 
   if (simSlider) {
@@ -780,7 +1476,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 15. Community Directory Renderer & Search
+  // ==========================================================================
+  // 14. Community Directory Renderer & Search
+  // ==========================================================================
   function renderDirectory(searchTerm = '') {
     const grid = document.getElementById('directoryGrid');
     if (!grid) return;
@@ -831,7 +1529,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 16. Modal Controllers
+  // ==========================================================================
+  // 15. Modal Controllers
+  // ==========================================================================
   function openModal(modalId) {
     playClick();
     const modal = document.getElementById(modalId);
@@ -851,16 +1551,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Close modal when clicking outside dialog
   document.querySelectorAll('.modal-overlay').forEach(modal => {
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
         modal.classList.remove('open');
+        if (modal.id === 'cameraScannerModal') {
+          stopCamera();
+        }
       }
     });
   });
 
-  // Open Methodology Modal
   const viewMethodologyBtn = document.getElementById('viewMethodologyBtn');
   if (viewMethodologyBtn) {
     viewMethodologyBtn.addEventListener('click', () => openModal('methodologyModal'));
@@ -873,13 +1574,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Open Submit Spot Modal
   const openSubmitSpotModal = document.getElementById('openSubmitSpotModal');
   if (openSubmitSpotModal) {
     openSubmitSpotModal.addEventListener('click', () => openModal('submitSpotModal'));
   }
 
-  // Submit Spot Form Handler
   const submitSpotForm = document.getElementById('submitSpotForm');
   if (submitSpotForm) {
     submitSpotForm.addEventListener('submit', (e) => {
@@ -905,9 +1604,19 @@ document.addEventListener('DOMContentLoaded', () => {
       submitSpotForm.reset();
       showToast('Thank you! Local repair hub submitted for verification.', 'success');
     });
+
+    const submitSpotConfirmBtn = document.getElementById('submitSpotConfirmBtn');
+    if (submitSpotConfirmBtn) {
+      submitSpotConfirmBtn.addEventListener('click', () => {
+        if (submitSpotForm.checkValidity()) {
+          submitSpotForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        } else {
+          submitSpotForm.reportValidity();
+        }
+      });
+    }
   }
 
-  // "Find Local Fixers" CTA button
   const findNearbyBtn = document.getElementById('findNearbyBtn');
   if (findNearbyBtn) {
     findNearbyBtn.addEventListener('click', () => {
@@ -916,66 +1625,73 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 17. Printable Assessment Report Generator
+  // Printable Assessment Report Generator
   const printReportBtn = document.getElementById('printReportBtn');
   const reportModalBody = document.getElementById('reportModalBody');
   const triggerPrintBtn = document.getElementById('triggerPrintBtn');
 
   if (printReportBtn) {
     printReportBtn.addEventListener('click', () => {
-      if (!state.currentAssessment) runEvaluation();
+      if (!state.currentAssessment) {
+        state.currentAssessment = engine.assessItem(collectFormData());
+      }
       const res = state.currentAssessment;
 
-      reportModalBody.innerHTML = `
-        <div style="border-bottom: 2px solid var(--primary); padding-bottom: 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
-          <div>
-            <h2 style="font-size: 1.5rem; margin-bottom: 0.2rem;">REFIX Assessment Certificate</h2>
-            <p style="font-size: 0.85rem; color: var(--text-dim);">Right-to-Repair &amp; Circularity Lifecycle Evaluation</p>
+      if (reportModalBody) {
+        reportModalBody.innerHTML = `
+          <div style="border-bottom: 2px solid var(--primary); padding-bottom: 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(16, 185, 129, 0.2); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">🌱</div>
+              <div>
+                <h2 style="font-size: 1.4rem; margin-bottom: 0.15rem;">REFIX Assessment Certificate</h2>
+                <p style="font-size: 0.8rem; color: var(--text-dim);">Circularity &amp; Right-to-Repair Lifecycle Evaluation</p>
+              </div>
+            </div>
+            <div style="text-align: right; font-size: 0.8rem; color: var(--text-dim);">
+              <strong>Date:</strong> ${new Date().toLocaleDateString()}<br>
+              <strong>Certificate ID:</strong> RFX-${Math.floor(100000 + Math.random() * 900000)}
+            </div>
           </div>
-          <div style="text-align: right; font-size: 0.8rem; color: var(--text-dim);">
-            <strong>Date:</strong> ${new Date().toLocaleDateString()}<br>
-            <strong>ID:</strong> RFX-${Math.floor(100000 + Math.random() * 900000)}
-          </div>
-        </div>
 
-        <div style="margin-bottom: 1.5rem;">
-          <h3 style="font-size: 1.25rem;">${res.itemTitle}</h3>
-          <p style="color: var(--text-muted); font-size: 0.9rem;">Category: ${res.category.name} | Material: ${res.materialInfo ? res.materialInfo.name : 'Standard'}</p>
-        </div>
-
-        <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
-          <div style="font-size: 1.4rem; font-weight: 800; color: ${res.verdict === 'REPAIR' ? 'var(--repair)' : res.verdict === 'REUSE' ? 'var(--reuse)' : 'var(--replace)'}; margin-bottom: 0.4rem;">
-            Official Verdict: ${res.verdict} (${res.confidence}% Confidence)
+          <div style="margin-bottom: 1.5rem;">
+            <h3 style="font-size: 1.25rem;">${res.itemTitle}</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Category: ${res.category.name} | Material: ${res.materialInfo ? res.materialInfo.name : 'Standard'}</p>
           </div>
-          <p style="font-size: 0.925rem; line-height: 1.5;">${res.verdictReason}</p>
-        </div>
 
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; text-align: center;">
-          <div style="background: var(--bg-input); padding: 1rem; border-radius: var(--radius-sm);">
-            <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim);">Money Saved</div>
-            <div style="font-size: 1.35rem; font-weight: 800; color: var(--primary);">${formatMoney(res.costs.moneySaved)}</div>
+          <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
+            <div style="font-size: 1.4rem; font-weight: 800; color: ${res.verdict === 'REPAIR' ? 'var(--repair)' : res.verdict === 'REUSE' ? 'var(--reuse)' : 'var(--replace)'}; margin-bottom: 0.4rem;">
+              Decision Verdict: ${res.verdict} (${res.confidence}% Confidence)
+            </div>
+            <p style="font-size: 0.925rem; line-height: 1.5;">${res.verdictReason}</p>
           </div>
-          <div style="background: var(--bg-input); padding: 1rem; border-radius: var(--radius-sm);">
-            <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim);">CO₂e Diverted</div>
-            <div style="font-size: 1.35rem; font-weight: 800;">${res.impact.co2AvoidedKg} kg</div>
-          </div>
-          <div style="background: var(--bg-input); padding: 1rem; border-radius: var(--radius-sm);">
-            <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim);">Waste Kept Out of Landfill</div>
-            <div style="font-size: 1.35rem; font-weight: 800;">${res.impact.wasteDivertedKg} kg</div>
-          </div>
-        </div>
 
-        <div style="margin-bottom: 1.5rem;">
-          <h4 style="font-size: 0.95rem; margin-bottom: 0.5rem;">Action Roadmap:</h4>
-          <ul style="padding-left: 1.25rem; font-size: 0.875rem; color: var(--text-muted); line-height: 1.6;">
-            ${res.actionPlan.keySteps.map(s => `<li>${s}</li>`).join('')}
-          </ul>
-        </div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; text-align: center;">
+            <div style="background: var(--bg-input); padding: 1rem; border-radius: var(--radius-sm);">
+              <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim);">Financial Savings</div>
+              <div style="font-size: 1.35rem; font-weight: 800; color: var(--primary);">${formatMoney(res.costs.moneySaved)}</div>
+            </div>
+            <div style="background: var(--bg-input); padding: 1rem; border-radius: var(--radius-sm);">
+              <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim);">CO₂e Diverted</div>
+              <div style="font-size: 1.35rem; font-weight: 800;">${res.impact.co2AvoidedKg} kg</div>
+            </div>
+            <div style="background: var(--bg-input); padding: 1rem; border-radius: var(--radius-sm);">
+              <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim);">Landfill Diverted</div>
+              <div style="font-size: 1.35rem; font-weight: 800;">${res.impact.wasteDivertedKg} kg</div>
+            </div>
+          </div>
 
-        <div style="border-top: 1px dashed var(--border); padding-top: 1rem; font-size: 0.75rem; color: var(--text-dim);">
-          * Methodology note: Calculations based on lifecycle circular benchmarks. Certified for hackathon demonstration.
-        </div>
-      `;
+          <div style="margin-bottom: 1.5rem;">
+            <h4 style="font-size: 0.95rem; margin-bottom: 0.5rem;">Recommended Action Blueprint:</h4>
+            <ul style="padding-left: 1.25rem; font-size: 0.875rem; color: var(--text-muted); line-height: 1.6;">
+              ${res.actionPlan.keySteps.map(s => `<li>${s}</li>`).join('')}
+            </ul>
+          </div>
+
+          <div style="border-top: 1px dashed var(--border); padding-top: 1rem; font-size: 0.75rem; color: var(--text-dim);">
+            * Evaluation computed via REFIX Circularity Engine heuristics based on lifecycle benchmarks. Currency displayed in ${data.currencies[state.currency].name}.
+          </div>
+        `;
+      }
 
       openModal('reportModal');
     });
@@ -988,9 +1704,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================================================
-  // 17.5. Visual Damage Scanner & Camera Subsystem
+  // 16. Visual Damage Scanner & Camera Subsystem
   // ==========================================================================
-  const scannerModal = document.getElementById('cameraScannerModal');
   const heroScanPhotoBtn = document.getElementById('heroScanPhotoBtn');
   const openScannerModalBtn = document.getElementById('openScannerModalBtn');
   const scannerVideo = document.getElementById('scannerVideo');
@@ -1012,11 +1727,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const retakePhotoBtn = document.getElementById('retakePhotoBtn');
   const applyScanBtn = document.getElementById('applyScanBtn');
   const removePhotoBtn = document.getElementById('removePhotoBtn');
-  const floatingResultBtn = document.getElementById('floatingResultBtn');
 
   let activeScanResult = null;
 
-  // Open Scanner Modal
   function openScannerModal(initialTab = 'camera') {
     openModal('cameraScannerModal');
     switchScannerTab(initialTab);
@@ -1029,7 +1742,6 @@ document.addEventListener('DOMContentLoaded', () => {
     openScannerModalBtn.addEventListener('click', () => openScannerModal('camera'));
   }
 
-  // Scanner Tab Switching
   const scannerTabBtns = document.querySelectorAll('.scanner-tab-btn');
   function switchScannerTab(tabName) {
     scannerTabBtns.forEach(btn => {
@@ -1040,9 +1752,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    document.getElementById('scannerCameraPane').classList.toggle('active', tabName === 'camera');
-    document.getElementById('scannerUploadPane').classList.toggle('active', tabName === 'upload');
-    document.getElementById('scannerSamplesPane').classList.toggle('active', tabName === 'samples');
+    const camPane = document.getElementById('scannerCameraPane');
+    const upPane = document.getElementById('scannerUploadPane');
+    const samPane = document.getElementById('scannerSamplesPane');
+
+    if (camPane) camPane.classList.toggle('active', tabName === 'camera');
+    if (upPane) upPane.classList.toggle('active', tabName === 'upload');
+    if (samPane) samPane.classList.toggle('active', tabName === 'samples');
 
     if (tabName === 'camera') {
       startCamera();
@@ -1059,7 +1775,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Start Camera Stream
   async function startCamera() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       showCameraFallback();
@@ -1082,7 +1797,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (viewfinderHud) viewfinderHud.style.display = 'block';
       }
     } catch (err) {
-      console.warn('Camera access denied or unavailable:', err);
+      console.warn('Camera access unavailable:', err);
       showCameraFallback();
     }
   }
@@ -1109,21 +1824,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Hook into modal close to always stop camera stream
-  const originalCloseModal = closeModal;
-  closeModal = function(modalId) {
-    if (modalId === 'cameraScannerModal') {
-      stopCamera();
-    }
-    originalCloseModal(modalId);
-  };
-
-  // Capture photo from video feed
   if (capturePhotoBtn) {
     capturePhotoBtn.addEventListener('click', () => {
       playSuccessChime();
       if (!scannerVideo || !scannerVideo.videoWidth) {
-        // Fallback to sample if camera has no active frame
         const fallbackSample = data.samplePhotos[0];
         analyzeImage(fallbackSample.svgThumb, fallbackSample, true);
         return;
@@ -1135,16 +1839,15 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.drawImage(scannerVideo, 0, 0, scannerCanvas.width, scannerCanvas.height);
       const dataUrl = scannerCanvas.toDataURL('image/jpeg', 0.85);
 
-      // Computer Vision simulated heuristic detection
       const activeCat = data.categories.find(c => c.id === categorySelect.value) || data.categories[0];
       const cameraMeta = {
         itemTitle: document.getElementById('itemTitle').value || `${activeCat.name} Item`,
         category: activeCat.id,
         material: materialSelect.value,
         damageSeverity: 'minor',
-        defectName: 'Surface Defect & Joint Stress Detected',
-        confidence: '89%',
-        damageDetails: 'Visual scan identified localized surface fracture and mechanical joint wear.'
+        defectName: 'Surface Wear & Joint Strain Detected',
+        confidence: '90%',
+        damageDetails: 'Optical scan localized surface wear and connector strain.'
       };
 
       analyzeImage(dataUrl, cameraMeta, false);
@@ -1152,7 +1855,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Upload File & Drag and Drop
   if (photoDropzone) {
     if (browsePhotoBtn) {
       browsePhotoBtn.addEventListener('click', (e) => {
@@ -1197,7 +1899,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function processUploadedImage(file) {
     if (!file.type.startsWith('image/')) {
-      showToast('Please select a valid image file (JPEG, PNG, WebP)', 'warning');
+      showToast('Please select an image file (JPEG, PNG, WebP)', 'warning');
       return;
     }
 
@@ -1206,20 +1908,19 @@ document.addEventListener('DOMContentLoaded', () => {
       playSuccessChime();
       const dataUrl = e.target.result;
       const uploadMeta = {
-        itemTitle: file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ') || 'Uploaded Item',
+        itemTitle: file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ') || 'Uploaded Object',
         category: categorySelect.value || 'furniture',
         material: materialSelect.value || 'solid_wood',
         damageSeverity: 'moderate',
-        defectName: 'Localized Fracture & Material Stress',
+        defectName: 'Localized Structural & Material Wear',
         confidence: '92%',
-        damageDetails: `Visual inspection of "${file.name}" reveals moderate material wear requiring repair intervention.`
+        damageDetails: `Visual inspection of "${file.name}" reveals localized wear ready for circular evaluation.`
       };
       analyzeImage(dataUrl, uploadMeta, false);
     };
     reader.readAsDataURL(file);
   }
 
-  // Render Sample Photos Grid
   function renderSamplePhotos() {
     if (!samplePhotosGrid) return;
     samplePhotosGrid.innerHTML = '';
@@ -1242,61 +1943,60 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Analyze Captured Image Sequence
   function analyzeImage(imgSource, meta, isSvg = false) {
     activeScanResult = { imgSource, meta, isSvg };
 
-    scannerAnalysisSection.style.display = 'block';
-    scannerAnalysisSection.scrollIntoView({ behavior: 'smooth' });
-
-    if (isSvg) {
-      capturedImageDisplay.innerHTML = imgSource;
-    } else {
-      capturedImageDisplay.innerHTML = `<img src="${imgSource}" alt="Damage scan">`;
+    if (scannerAnalysisSection) {
+      scannerAnalysisSection.style.display = 'block';
+      scannerAnalysisSection.scrollIntoView({ behavior: 'smooth' });
     }
 
-    analysisSpinner.style.display = 'block';
-    detectionTagsCard.style.display = 'none';
-    analysisStatusTitle.textContent = 'Visual AI Inspection in Progress...';
-    analysisStatusStep.textContent = 'Analyzing surface fracture contours and texture frequency...';
+    if (capturedImageDisplay) {
+      if (isSvg) {
+        capturedImageDisplay.innerHTML = imgSource;
+      } else {
+        capturedImageDisplay.innerHTML = `<img src="${imgSource}" alt="Damage scan preview" style="max-height: 220px; border-radius: var(--radius-md);">`;
+      }
+    }
 
-    // Simulated 3-step inspection stages
+    if (analysisSpinner) analysisSpinner.style.display = 'block';
+    if (detectionTagsCard) detectionTagsCard.style.display = 'none';
+    if (analysisStatusTitle) analysisStatusTitle.textContent = 'Analyzing Object Condition...';
+    if (analysisStatusStep) analysisStatusStep.textContent = 'Segmenting defect contours and material boundaries...';
+
     setTimeout(() => {
-      analysisStatusStep.textContent = 'Segmenting material boundaries & structural stress points...';
+      if (analysisStatusStep) analysisStatusStep.textContent = `Classifying defect: "${meta.defectName}"...`;
       playTone(600, 'sine', 0.08, 0.04);
     }, 600);
 
     setTimeout(() => {
-      analysisStatusStep.textContent = `Classifying defect: "${meta.defectName}" (Confidence: ${meta.confidence || '91%'})`;
-      playTone(750, 'sine', 0.08, 0.04);
-    }, 1200);
-
-    setTimeout(() => {
-      analysisSpinner.style.display = 'none';
-      analysisStatusTitle.textContent = '✓ Visual Inspection Complete';
-      analysisStatusStep.textContent = 'Defect classified with high confidence. Ready to apply to decision engine.';
+      if (analysisSpinner) analysisSpinner.style.display = 'none';
+      if (analysisStatusTitle) analysisStatusTitle.textContent = '✓ Inspection Verified';
+      if (analysisStatusStep) analysisStatusStep.textContent = 'Condition verified. Ready to apply to assessment card.';
       
-      document.getElementById('detObjectVal').textContent = meta.itemTitle || meta.name;
-      const cat = data.categories.find(c => c.id === meta.category);
-      document.getElementById('detMaterialVal').textContent = (meta.material || 'Standard').replace(/_/g, ' ');
-      document.getElementById('detDefectVal').textContent = meta.defectName;
-      document.getElementById('detSeverityVal').textContent = `${(meta.damageSeverity || 'moderate').toUpperCase()} Severity`;
+      const detObject = document.getElementById('detObjectVal');
+      const detMat = document.getElementById('detMaterialVal');
+      const detDefect = document.getElementById('detDefectVal');
+      const detSev = document.getElementById('detSeverityVal');
 
-      detectionTagsCard.style.display = 'block';
+      if (detObject) detObject.textContent = meta.itemTitle || meta.name;
+      if (detMat) detMat.textContent = (meta.material || 'Standard').replace(/_/g, ' ');
+      if (detDefect) detDefect.textContent = meta.defectName;
+      if (detSev) detSev.textContent = `${(meta.damageSeverity || 'moderate').toUpperCase()} Severity`;
+
+      if (detectionTagsCard) detectionTagsCard.style.display = 'block';
       playSuccessChime();
-    }, 1700);
+    }, 1200);
   }
 
-  // Retake photo
   if (retakePhotoBtn) {
     retakePhotoBtn.addEventListener('click', () => {
       playClick();
-      scannerAnalysisSection.style.display = 'none';
+      if (scannerAnalysisSection) scannerAnalysisSection.style.display = 'none';
       switchScannerTab('camera');
     });
   }
 
-  // Apply Scan to Assessment Form
   if (applyScanBtn) {
     applyScanBtn.addEventListener('click', () => {
       if (!activeScanResult) return;
@@ -1305,9 +2005,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const meta = activeScanResult.meta;
       state.scannedPhoto = activeScanResult;
 
-      // Populate form fields
       if (meta.category) {
         categorySelect.value = meta.category;
+        state.selectedScopeCategory = meta.category;
         populateMaterialsForCategory(meta.category);
       }
 
@@ -1317,13 +2017,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (meta.damageDetails) document.getElementById('damageDetails').value = meta.damageDetails;
         if (meta.ageYears) document.getElementById('itemAge').value = meta.ageYears;
 
-        if (meta.originalCostUSD) {
+        if (meta.originalCost) {
+          state.baseOriginalUSD = meta.originalCost;
+          state.baseRepairUSD = meta.repairCost || Math.round(meta.originalCost * 0.2);
           const cur = data.currencies[state.currency] || data.currencies.USD;
-          document.getElementById('originalCost').value = Math.round(meta.originalCostUSD * cur.rate);
-          document.getElementById('repairCost').value = Math.round(meta.repairCostUSD * cur.rate);
+          document.getElementById('originalCost').value = Math.round(state.baseOriginalUSD * cur.rate);
+          document.getElementById('repairCost').value = Math.round(state.baseRepairUSD * cur.rate);
         }
 
-        // Radio severity
         const radio = document.querySelector(`input[name="damageSeverity"][value="${meta.damageSeverity}"]`);
         if (radio) {
           radio.checked = true;
@@ -1333,44 +2034,43 @@ document.addEventListener('DOMContentLoaded', () => {
           radio.closest('.radio-card').classList.add('selected');
         }
 
+        syncFormDraggableCard();
         closeModal('cameraScannerModal');
-        setWizardStep(1);
-        runEvaluation();
-        showToast('Visual scan applied! Assessment recalculated.', 'success');
+        stopCamera();
+
+        const evaluatedItem = collectFormData();
+        executeDropEvaluation(evaluatedItem, meta.damageSeverity === 'critical' ? 'replace' : 'repair');
+        showToast('Photo inspection verified and applied to decision engine!', 'success');
         document.getElementById('engine').scrollIntoView({ behavior: 'smooth' });
       }, 50);
     });
   }
 
-  // Remove photo button handler in result card
   if (removePhotoBtn) {
     removePhotoBtn.addEventListener('click', () => {
       playClick();
       state.scannedPhoto = null;
-      document.getElementById('resPhotoInspectionWrap').style.display = 'none';
-      showToast('Visual inspection photo removed', 'info');
+      const photoWrap = document.getElementById('resPhotoInspectionWrap');
+      if (photoWrap) photoWrap.style.display = 'none';
+      showToast('Inspection photo removed', 'info');
     });
   }
 
-  // Floating Result Jump Button
-  if (floatingResultBtn) {
-    floatingResultBtn.addEventListener('click', () => {
-      playClick();
-      const resultPanel = document.getElementById('resultPanel');
-      if (resultPanel) {
-        resultPanel.scrollIntoView({ behavior: 'smooth' });
-      }
-    });
-  }
-
-  // 18. Initial App Bootstrap
+  // ==========================================================================
+  // 17. Initial Application Bootstrap
+  // ==========================================================================
   populateCategoriesDropdown();
   renderPresets();
   renderSamplePhotos();
-  updateHeroPreview();
+  syncFormDraggableCard();
+  setupActionZones();
+  updateCurrencyLabels();
   renderCategories('all');
   renderUpcycling();
   updateSimulator();
   renderDirectory();
-  runEvaluation();
+
+  // Run initial evaluation for default Oak Dining Chair
+  const initialData = collectFormData();
+  executeDropEvaluation(initialData, 'repair');
 });

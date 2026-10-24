@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>REFIX — Fix It First | Multi-Material Decision Engine</title>
-  <meta name="description" content="Decide whether to repair, reuse, or replace any object or material. Covering furniture, textiles, electronics, cookware, tools, and plastics.">
+  <title>REFIX — Don't Trash It. Fix It First | Circularity Decision Platform</title>
+  <meta name="description" content="Decide whether to repair, reuse, repurpose, recycle, or replace any object or material. Covering furniture, textiles, electronics, cookware, tools, and plastics.">
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,14 +19,38 @@
   <div class="bg-mesh-overlay" aria-hidden="true"></div>
 
   <!-- ==========================================================================
-       Site Header
+       Site Header & Navigation
        ========================================================================== -->
   <header class="site-header">
     <div class="container navbar">
-      <!-- Brand Logo -->
+      <!-- Clean Professional Sustainability Brand Logo -->
       <a href="#" class="brand-logo" aria-label="REFIX Home">
         <div class="brand-icon-wrap" aria-hidden="true">
-          <span>🌱</span>
+          <svg class="brand-logo-svg" viewBox="0 0 44 44" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="refixBrandGrad" x1="4" y1="4" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#10b981"/>
+                <stop offset="50%" stop-color="#14b8a6"/>
+                <stop offset="100%" stop-color="#06b6d4"/>
+              </linearGradient>
+              <linearGradient id="refixLeafGrad" x1="6" y1="22" x2="22" y2="6" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#10b981"/>
+                <stop offset="100%" stop-color="#34d399"/>
+              </linearGradient>
+            </defs>
+            <rect x="2" y="2" width="40" height="40" rx="12" fill="url(#refixBrandGrad)" fill-opacity="0.14"/>
+            <rect x="2" y="2" width="40" height="40" rx="12" stroke="url(#refixBrandGrad)" stroke-width="1.5" stroke-opacity="0.45"/>
+            <!-- Organic Leaf renewal arc -->
+            <path d="M22 10C15.3726 10 10 15.3726 10 22C10 25.682 11.6601 28.9774 14.28 31.2C15.5 28.5 17 24.5 21 23C21 19 20 15 22 10Z" fill="url(#refixLeafGrad)" fill-opacity="0.32"/>
+            <path d="M22 10C15.3726 10 10 15.3726 10 22C10 25.682 11.6601 28.9774 14.28 31.2" stroke="url(#refixBrandGrad)" stroke-width="2.7" stroke-linecap="round"/>
+            <!-- Precision Repair / Calibration loop & return arrow -->
+            <path d="M22 34C28.6274 34 34 28.6274 34 22C34 17.5 31.5 13.5 28 11.5" stroke="url(#refixBrandGrad)" stroke-width="2.7" stroke-linecap="round"/>
+            <path d="M24 8.5L28.5 11.5L25.5 15.5" stroke="url(#refixBrandGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M20 35.5L15.5 32.5L18.5 28.5" stroke="url(#refixBrandGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- Central renewal spark nucleus -->
+            <circle cx="22" cy="22" r="3.2" fill="#10b981"/>
+            <circle cx="22" cy="22" r="1.4" fill="#ffffff"/>
+          </svg>
         </div>
         <div>
           <span class="brand-name">REFIX</span>
@@ -34,12 +58,12 @@
         </div>
       </a>
 
-      <!-- Desktop Navigation Links -->
+      <!-- Desktop Navigation Links (Evenly distributed) -->
       <ul class="nav-links" id="navLinks">
         <li><a href="#engine" class="nav-link active">Decision Engine</a></li>
-        <li><a href="#framework" class="nav-link">The 3 R's</a></li>
-        <li><a href="#categories" class="nav-link">Categories</a></li>
-        <li><a href="#upcycling" class="nav-link">Upcycle Ideas</a></li>
+        <li><a href="#framework" class="nav-link">3Rs Cycle</a></li>
+        <li><a href="#categories" class="nav-link">Universal Scope</a></li>
+        <li><a href="#upcycling" class="nav-link">Repurposing Ideas</a></li>
         <li><a href="#simulator" class="nav-link">Impact Simulator</a></li>
         <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
         <li><a href="#directory" class="nav-link">Local Repair</a></li>
@@ -48,18 +72,19 @@
 
       <!-- Action Utilities -->
       <div class="nav-actions">
-        <!-- Currency Selector -->
+        <!-- Currency Selector with verified benchmark tag -->
         <div class="currency-select-wrap">
-          <select id="currencySelect" class="currency-select" title="Change Currency">
+          <select id="currencySelect" class="currency-select" title="Global Currency: Q4 2024 Reference Benchmarks (1 USD = 0.92 EUR = 0.79 GBP = 83.50 INR)">
             <option value="USD">USD ($)</option>
             <option value="EUR">EUR (€)</option>
             <option value="GBP">GBP (£)</option>
             <option value="INR">INR (₹)</option>
           </select>
+          <span id="currencyRateBadge" class="currency-rate-badge" title="Benchmark Rates: 1 USD = 0.92 EUR | 0.79 GBP | 83.50 INR (Q4 '24 ECB/IMF)">Q4 '24 ECB</span>
         </div>
 
         <!-- Audio feedback toggle -->
-        <button id="soundToggleBtn" class="icon-btn" title="Toggle Sound Effects" aria-label="Toggle Sound Effects">
+        <button id="soundToggleBtn" class="icon-btn" title="Toggle Sound Feedback" aria-label="Toggle Sound Feedback">
           <span id="soundIcon">🔊</span>
         </button>
 
@@ -68,7 +93,7 @@
           <span id="themeIcon">🌙</span>
         </button>
 
-        <!-- Primary CTA -->
+        <!-- Primary CTA scrolling to engine -->
         <a href="#engine" class="btn btn-primary btn-sm">
           <span>Evaluate an Item</span>
         </a>
@@ -90,7 +115,7 @@
         <div class="hero-content">
           <div class="hero-badge">
             <span class="pulse-dot"></span>
-            <span>Circular Economy Decision System • Hackathon Edition</span>
+            <span>Circular Economy Decision System • Smart Sustainability Engine</span>
           </div>
 
           <h1 class="hero-title">
@@ -99,7 +124,7 @@
           </h1>
 
           <p class="hero-lead">
-            An intelligent decision engine that helps you determine whether an object should be <strong>Repaired</strong>, <strong>Reused</strong>, or <strong>Replaced</strong>. Works for all materials—from furniture, denim, and cast iron to electronics and power tools.
+            An intelligent decision engine that helps you determine whether an object should be <strong>Repaired</strong>, <strong>Reused</strong>, or <strong>Replaced</strong>. Works for all materials—from furniture, denim, and footwear to cookware, electronics, and mechanical gear.
           </p>
 
           <div class="hero-actions">
@@ -107,7 +132,7 @@
               <span>⚡ Start Assessment</span>
             </a>
             <button type="button" id="heroScanPhotoBtn" class="btn btn-secondary btn-lg" style="border-color: rgba(16, 185, 129, 0.4); color: var(--primary);">
-              <span>📷 Scan Damage Photo</span>
+              <span>📷 Scan / Upload Damage Photo</span>
             </button>
             <a href="#framework" class="btn btn-secondary btn-lg">
               <span>📖 The 3 R's Framework</span>
@@ -137,11 +162,11 @@
             <div class="preview-title">
               <span>⚡</span> Quick Assessment Preview
             </div>
-            <span class="preview-badge">Instant Try</span>
+            <span class="preview-badge">Interactive Test</span>
           </div>
 
           <div class="quick-selector-group">
-            <label class="quick-selector-label">Pick an everyday object to test the engine:</label>
+            <label class="quick-selector-label">Pick an everyday object to preview circular verdict:</label>
             <div class="preset-chip-list" id="heroPresetChips">
               <!-- Rendered via JS -->
             </div>
@@ -166,16 +191,16 @@
           </div>
 
           <div style="margin-top: 1.25rem; text-align: center;">
-            <button id="heroLoadIntoEngineBtn" class="btn btn-secondary btn-sm" style="width: 100%;">
-              Open Full Detailed Evaluation ↓
-            </button>
+            <a href="#engine" id="heroLoadIntoEngineBtn" class="btn btn-secondary btn-sm" style="width: 100%; text-decoration: none;">
+              Load Into Engine & Evaluate ↓
+            </a>
           </div>
         </div>
       </div>
     </section>
 
     <!-- ==========================================================================
-         The 3 R's Framework Section
+         The 3 R's Decision Framework Section (ALSO ACTIVE DROP TARGETS)
          ========================================================================== -->
     <section class="section" id="framework">
       <div class="container">
@@ -189,49 +214,58 @@
 
         <div class="framework-cards-grid">
           <!-- Card 1: REPAIR -->
-          <div class="framework-card repair-card">
+          <div class="framework-card repair-card action-zone" data-action="repair" id="frameworkCardRepair">
+            <div class="zone-drop-indicator-banner">
+              <span>⇣ DROP CARD HERE TO EVALUATE REPAIR</span>
+            </div>
             <div class="card-icon-pill repair-icon">🔧</div>
-            <h3 class="card-title">Repair</h3>
+            <h3 class="card-title">1. Repair</h3>
             <div class="card-subtitle repair">Fix It First • Restore Function</div>
             <p class="card-text">
-              The highest priority in the circular economy. Restores original utility while keeping 95%+ of the existing material intact.
+              The highest priority in the circular economy. Restores original utility using simple hand tools, adhesives, or spare parts.
             </p>
             <ul class="card-checklist">
               <li><span class="check-icon" style="color: var(--repair);">✓</span> Repair cost &lt; 50% of new replacement price</li>
               <li><span class="check-icon" style="color: var(--repair);">✓</span> Spare parts or standard adhesives available</li>
               <li><span class="check-icon" style="color: var(--repair);">✓</span> No structural hazard or toxic degradation</li>
-              <li><span class="check-icon" style="color: var(--repair);">✓</span> Maximizes carbon and resource preservation</li>
+              <li><span class="check-icon" style="color: var(--repair);">✓</span> Maximizes carbon, water, and raw material preservation</li>
             </ul>
           </div>
 
-          <!-- Card 2: REUSE -->
-          <div class="framework-card reuse-card">
+          <!-- Card 2: REUSE & REPURPOSE -->
+          <div class="framework-card reuse-card action-zone" data-action="reuse" id="frameworkCardReuse">
+            <div class="zone-drop-indicator-banner">
+              <span>⇣ DROP CARD HERE TO EVALUATE REUSE</span>
+            </div>
             <div class="card-icon-pill reuse-icon">🔄</div>
-            <h3 class="card-title">Reuse &amp; Repurpose</h3>
+            <h3 class="card-title">2. Reuse &amp; Repurpose</h3>
             <div class="card-subtitle reuse">Give A Second Life • Upcycle</div>
             <p class="card-text">
               When primary function is impaired or uneconomical to restore, transform durable raw materials into creative, useful new items.
             </p>
             <ul class="card-checklist">
               <li><span class="check-icon" style="color: var(--reuse);">✓</span> Primary repair cost &gt; 65% of original value</li>
-              <li><span class="check-icon" style="color: var(--reuse);">✓</span> Structural materials (wood, denim, metal) are intact</li>
-              <li><span class="check-icon" style="color: var(--reuse);">✓</span> Old electronics can serve dedicated tasks (e.g. server)</li>
+              <li><span class="check-icon" style="color: var(--reuse);">✓</span> Structural materials (wood, denim, metal) are sound</li>
+              <li><span class="check-icon" style="color: var(--reuse);">✓</span> Donate to community libraries or reassign utility</li>
               <li><span class="check-icon" style="color: var(--reuse);">✓</span> Diverts 100% of the object from municipal landfills</li>
             </ul>
           </div>
 
-          <!-- Card 3: REPLACE -->
-          <div class="framework-card replace-card">
-            <div class="card-icon-pill replace-icon">♻️</div>
-            <h3 class="card-title">Replace Responsibly</h3>
-            <div class="card-subtitle replace">Certified Recycling • Safe Retirement</div>
+          <!-- Card 3: REPLACE & RECYCLE -->
+          <div class="framework-card replace-card action-zone" data-action="replace" id="frameworkCardReplace">
+            <div class="zone-drop-indicator-banner">
+              <span>⇣ DROP CARD HERE TO EVALUATE REPLACE</span>
+            </div>
+            <div class="card-icon-pill replace-icon">🛑</div>
+            <h3 class="card-title">3. Replace Responsibly</h3>
+            <div class="card-subtitle replace">Certified Recycling • Safety Veto</div>
             <p class="card-text">
-              When an item compromises safety, contains toxic flaking coatings, or is irreparably broken. Always pair with certified recycling and durable replacements.
+              When an item compromises safety (flaking PTFE Teflon, cracked helmet shock foam) or is irreparably degraded. Pair with certified recycling.
             </p>
             <ul class="card-checklist">
-              <li><span class="check-icon" style="color: var(--replace);">✓</span> Critical safety risks (cracked helmet, peeling Teflon)</li>
-              <li><span class="check-icon" style="color: var(--replace);">✓</span> Repair costs exceed value with poor longevity</li>
-              <li><span class="check-icon" style="color: var(--replace);">✓</span> Divert via certified e-waste or metal scrap stations</li>
+              <li><span class="check-icon" style="color: var(--replace);">✓</span> Critical safety hazards veto dangerous DIY repairs</li>
+              <li><span class="check-icon" style="color: var(--replace);">✓</span> Repair costs exceed value with negligible longevity</li>
+              <li><span class="check-icon" style="color: var(--replace);">✓</span> Reclaim metals and plastics via certified scrap streams</li>
               <li><span class="check-icon" style="color: var(--replace);">✓</span> Upgrade to modular, "Buy-It-For-Life" designs</li>
             </ul>
           </div>
@@ -248,17 +282,17 @@
           <div class="section-tag">Interactive Evaluation</div>
           <h2 class="section-title">Object Condition &amp; Lifecycle Assessment</h2>
           <p class="section-desc">
-            Complete the 4-step assessment or load a ready-made preset to evaluate any object's repairability, economic trade-offs, and environmental savings.
+            Configure any object below or grab a ready-made preset, then <strong>drag the card into an Action Zone</strong> to generate an immediate, custom decision blueprint.
           </p>
         </div>
 
-        <!-- Transparent Demo Logic Disclaimer -->
+        <!-- Transparent Decision Logic Disclaimer -->
         <div class="demo-disclaimer-banner">
           <div class="disclaimer-text">
             <strong>💡 Algorithmic Decision Engine (Deterministic Heuristics):</strong>
-            All calculations, repairability scores, and carbon indicators are computed live in your browser using structured circular economy benchmarks. No backend required.
+            All calculations, repairability scores, and carbon indicators are computed live in your browser using structured circular economy benchmarks. Zero backend required.
           </div>
-          <button id="viewMethodologyBtn" class="btn btn-secondary btn-sm">
+          <button type="button" id="viewMethodologyBtn" class="btn btn-secondary btn-sm">
             Methodology &amp; Formulas
           </button>
         </div>
@@ -278,26 +312,26 @@
           <!-- On Resized Screens: Tab switcher between [Condition Form] and [Recommendation Result] -->
           <div class="compact-view-tabs" id="compactViewTabs">
             <button type="button" class="compact-tab-btn active" id="compactShowFormBtn">
-              <span>📝 1. Condition Evaluation Form</span>
+              <span>📝 1. Condition Form &amp; Action Zones</span>
             </button>
             <button type="button" class="compact-tab-btn" id="compactShowResultBtn">
-              <span>📊 2. Evaluation Result</span>
+              <span>📊 2. Recommendation Result</span>
               <span class="compact-verdict-pill verdict-repair" id="compactVerdictPill">🟢 REPAIR</span>
             </button>
           </div>
         </div>
 
         <div class="engine-layout-grid">
-          <!-- Left Column: Multi-Step Assessment Form Wizard -->
+          <!-- Left Column: Multi-Step Assessment Form Wizard & Draggable Action Canvas -->
           <div class="wizard-card all-in-one-mode" id="wizardCard">
-            <!-- Preset Quick Load Ribbon -->
+            <!-- Preset Quick Load Draggable Cards Ribbon -->
             <div class="presets-bar">
               <div class="presets-header">
-                <span class="presets-label">⚡ Judge Quick-Test Presets:</span>
-                <span style="font-size: 0.75rem; color: var(--text-dim);">Click any to auto-fill</span>
+                <span class="presets-label">⚡ Quick-Test Item Cards:</span>
+                <span style="font-size: 0.75rem; color: var(--text-dim);">Click to load, or drag any card to an Action Zone below</span>
               </div>
               <div class="preset-scroll-container" id="wizardPresetPills">
-                <!-- Populated dynamically via JS -->
+                <!-- Populated dynamically via JS with draggable item cards -->
               </div>
             </div>
 
@@ -322,7 +356,7 @@
             </div>
 
             <!-- Wizard Form -->
-            <form id="assessmentForm">
+            <form id="assessmentForm" onsubmit="return false;">
               <!-- STEP 1: Item & Material -->
               <div class="form-step-content active" id="step1Content">
                 <div class="step-section-heading">
@@ -336,7 +370,7 @@
                     <div class="scanner-trigger-icon">📷</div>
                     <div>
                       <h4 class="scanner-trigger-title">Visual Damage Scanner &amp; Camera</h4>
-                      <p class="scanner-trigger-desc">Take a photo with your camera or upload an image to inspect damage and auto-fill this assessment.</p>
+                      <p class="scanner-trigger-desc">Take a photo with your device camera or upload an image to inspect damage and auto-fill this assessment.</p>
                     </div>
                   </div>
                   <button type="button" id="openScannerModalBtn" class="btn btn-primary btn-sm">
@@ -380,7 +414,7 @@
                 <div class="form-group">
                   <label class="form-label">Damage Severity Level</label>
                   <div class="radio-cards-grid">
-                    <label class="radio-card card-cosmetic selected">
+                    <label class="radio-card card-cosmetic">
                       <input type="radio" name="damageSeverity" value="cosmetic">
                       <div class="radio-card-content">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.2rem;">
@@ -391,7 +425,7 @@
                       </div>
                     </label>
 
-                    <label class="radio-card card-minor">
+                    <label class="radio-card card-minor selected">
                       <input type="radio" name="damageSeverity" value="minor" checked>
                       <div class="radio-card-content">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.2rem;">
@@ -446,7 +480,7 @@
                     <label class="form-label" for="userSkill">Your DIY Skill Level</label>
                     <select id="userSkill" class="form-select">
                       <option value="beginner">Beginner (Basic household tools)</option>
-                      <option value="intermediate" selected>Intermediate (Comfortable with tools & glue)</option>
+                      <option value="intermediate" selected>Intermediate (Comfortable with tools &amp; glue)</option>
                       <option value="advanced">Advanced Maker / Tinkerer</option>
                       <option value="hire_pro">Prefer Hiring Local Professional</option>
                     </select>
@@ -519,19 +553,19 @@
                   <label class="form-label">Circularity Checklist</label>
                   <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
                     <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                      <input type="checkbox" id="checkLocalAccess" checked accent-color="var(--primary)">
+                      <input type="checkbox" id="checkLocalAccess" checked>
                       Access to local repair cafe, community workshop, or maker space
                     </label>
                     <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                      <input type="checkbox" id="checkWillingUpcycle" checked accent-color="var(--primary)">
+                      <input type="checkbox" id="checkWillingUpcycle" checked>
                       Open to creative repurposing if repair is unfeasible
                     </label>
                   </div>
                 </div>
               </div>
 
-              <!-- Wizard Footer Buttons -->
-              <div class="wizard-footer-actions" id="wizardFooterActions">
+              <!-- Wizard Stepper Navigation Buttons (for step navigation) -->
+              <div class="wizard-footer-actions" id="wizardFooterActions" style="display: none;">
                 <button type="button" id="prevStepBtn" class="btn btn-secondary" style="visibility: hidden;">
                   ← Back
                 </button>
@@ -539,9 +573,85 @@
                   <button type="button" id="nextStepBtn" class="btn btn-primary">
                     Next Step →
                   </button>
-                  <button type="submit" id="calculateBtn" class="btn btn-primary" style="display: none;">
-                    ⚡ Calculate Verdict
-                  </button>
+                </div>
+              </div>
+
+              <!-- ================================================================
+                   DRAG-AND-DROP PRIMARY ACTION WORKSPACE (IN THE FORM)
+                   Replaces prohibited calculate button with genuine drag-to-action
+                   ================================================================ -->
+              <div class="form-action-execution-section" id="formActionExecutionSection">
+                <div class="execution-prompt-header">
+                  <div class="execution-badge">Primary Action Workspace</div>
+                  <h4 style="font-size: 1.05rem; margin-bottom: 0.25rem;">Execute Verdict via Drag-and-Drop:</h4>
+                  <p style="font-size: 0.825rem; color: var(--text-muted);">
+                    Drag your configured <strong>Item Card</strong> below directly into an <strong>Action Zone</strong> to calculate the custom verdict!
+                  </p>
+                </div>
+
+                <!-- Live Draggable Item Decision Card -->
+                <div class="form-decision-card" id="formDraggableCard" draggable="true" tabindex="0" role="button" aria-label="Configured Item Card. Drag to an action zone to evaluate.">
+                  <div class="decision-card-handle">
+                    <span class="drag-icon">⠿</span>
+                    <span>DRAG THIS ITEM CARD</span>
+                  </div>
+                  <div class="decision-card-body">
+                    <div class="decision-card-icon" id="decisionCardIcon">🪑</div>
+                    <div class="decision-card-info">
+                      <div class="decision-card-header-line">
+                        <strong class="decision-card-title" id="decisionCardTitle">Solid Oak Dining Chair</strong>
+                        <span class="severity-mini-tag severity-minor" id="decisionCardSevTag">🟡 Minor</span>
+                      </div>
+                      <p class="decision-card-desc" id="decisionCardDesc">Mortise joint loose; wood fibers sound.</p>
+                      <div class="decision-card-meta">
+                        <span id="decisionCardCatText">Furniture • Solid Wood</span>
+                        <span id="decisionCardPriceText">Est. New: $140</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- The 5 Action Drop Zones Strip -->
+                <div class="decision-action-zones-strip" id="decisionActionZonesStrip">
+                  <!-- Zone 1: REPAIR -->
+                  <div class="action-drop-zone zone-repair action-zone" data-action="repair" id="zoneRepair">
+                    <div class="zone-drop-tag">⇣ DROP HERE</div>
+                    <span class="zone-icon">🔧</span>
+                    <strong class="zone-name">REPAIR</strong>
+                    <span class="zone-hint">Fix &amp; restore</span>
+                  </div>
+
+                  <!-- Zone 2: REUSE -->
+                  <div class="action-drop-zone zone-reuse action-zone" data-action="reuse" id="zoneReuse">
+                    <div class="zone-drop-tag">⇣ DROP HERE</div>
+                    <span class="zone-icon">🔄</span>
+                    <strong class="zone-name">REUSE</strong>
+                    <span class="zone-hint">Share &amp; swap</span>
+                  </div>
+
+                  <!-- Zone 3: REPURPOSE -->
+                  <div class="action-drop-zone zone-repurpose action-zone" data-action="repurpose" id="zoneRepurpose">
+                    <div class="zone-drop-tag">⇣ DROP HERE</div>
+                    <span class="zone-icon">✨</span>
+                    <strong class="zone-name">REPURPOSE</strong>
+                    <span class="zone-hint">Upcycle utility</span>
+                  </div>
+
+                  <!-- Zone 4: RECYCLE -->
+                  <div class="action-drop-zone zone-recycle action-zone" data-action="recycle" id="zoneRecycle">
+                    <div class="zone-drop-tag">⇣ DROP HERE</div>
+                    <span class="zone-icon">♻️</span>
+                    <strong class="zone-name">RECYCLE</strong>
+                    <span class="zone-hint">Reclaim metals</span>
+                  </div>
+
+                  <!-- Zone 5: REPLACE -->
+                  <div class="action-drop-zone zone-replace action-zone" data-action="replace" id="zoneReplace">
+                    <div class="zone-drop-tag">⇣ DROP HERE</div>
+                    <span class="zone-icon">🛑</span>
+                    <strong class="zone-name">REPLACE</strong>
+                    <span class="zone-hint">Safety veto</span>
+                  </div>
                 </div>
               </div>
             </form>
@@ -567,10 +677,10 @@
               <div class="thumb-preview" id="resPhotoThumb"></div>
               <div class="photo-inspection-info">
                 <div class="badge-label">
-                  <span>📸</span> Visual AI Inspection Verified
+                  <span>📷</span> Inspection Photo Attached
                 </div>
                 <h5 id="resPhotoDefect">Mortise &amp; Tenon Joint Separation</h5>
-                <p id="resPhotoConfidence">Confidence: 91% • Defect localized</p>
+                <p id="resPhotoConfidence">Manual Condition Verified • Defect localized</p>
               </div>
               <button type="button" id="removePhotoBtn" class="photo-remove-btn" title="Remove Photo">×</button>
             </div>
@@ -678,12 +788,23 @@
               </div>
             </div>
 
+            <!-- Re-Draggable Active Card Handle (Allows dragging directly from result card!) -->
+            <div class="result-redrag-box">
+              <span class="redrag-label">🔄 Explore Another Action Pathway:</span>
+              <div class="result-redrag-pill" id="resRedragPill" draggable="true" title="Drag this item to another Action Zone above to see an alternative blueprint!">
+                <span class="drag-icon">⠿</span>
+                <span id="resRedragIcon">🪑</span>
+                <strong id="resRedragName">Solid Oak Dining Chair</strong>
+                <span class="redrag-arrow-hint">Drag to another zone ➔</span>
+              </div>
+            </div>
+
             <!-- Result Buttons -->
             <div class="result-btn-row">
-              <button id="printReportBtn" class="btn btn-secondary btn-sm">
+              <button type="button" id="printReportBtn" class="btn btn-secondary btn-sm">
                 📄 Print / PDF Report
               </button>
-              <button id="findNearbyBtn" class="btn btn-primary btn-sm">
+              <button type="button" id="findNearbyBtn" class="btn btn-primary btn-sm">
                 📍 Find Local Fixers
               </button>
             </div>
@@ -693,7 +814,7 @@
     </section>
 
     <!-- ==========================================================================
-         Object Categories Showcase Section (All Object Types)
+         Object Categories Showcase Section (Universal Scope - All Materials)
          ========================================================================== -->
     <section class="section" id="categories">
       <div class="container">
@@ -701,44 +822,76 @@
           <div class="section-tag">Universal Scope</div>
           <h2 class="section-title">Beyond Appliances: Every Material Counts</h2>
           <p class="section-desc">
-            REFIX handles furniture, textiles, footwear, cookware, metals, mechanics, and consumer goods. Explore lifespan benchmarks and common circular strategies.
+            REFIX handles electronics, solid state drives, furniture, textiles, footwear, cookware, metals, and mechanics. Click any category card or appliance option below to immediately load and evaluate its circular blueprint.
           </p>
         </div>
 
         <!-- Filter tabs -->
         <div class="categories-filter-bar" id="categoryFilterBar">
-          <button class="cat-filter-btn active" data-category="all">All Categories</button>
-          <button class="cat-filter-btn" data-category="furniture">🪑 Furniture</button>
-          <button class="cat-filter-btn" data-category="clothing">👕 Textiles &amp; Shoes</button>
-          <button class="cat-filter-btn" data-category="electronics">📱 Electronics</button>
-          <button class="cat-filter-btn" data-category="kitchen">🍳 Cookware</button>
-          <button class="cat-filter-btn" data-category="mechanical">🚲 Mechanical</button>
-          <button class="cat-filter-btn" data-category="hardware">🔨 Hardware</button>
-          <button class="cat-filter-btn" data-category="plastics">🧳 Plastics &amp; Gear</button>
+          <button type="button" class="cat-filter-btn active" data-category="all">All Scope</button>
+          <button type="button" class="cat-filter-btn" data-category="electronics">📱 Electronics &amp; SSDs</button>
+          <button type="button" class="cat-filter-btn" data-category="furniture">🪑 Furniture &amp; Wood</button>
+          <button type="button" class="cat-filter-btn" data-category="clothing">👕 Textiles &amp; Shoes</button>
+          <button type="button" class="cat-filter-btn" data-category="kitchen">🍳 Cookware &amp; Glass</button>
+          <button type="button" class="cat-filter-btn" data-category="mechanical">🚲 Bicycles &amp; Tools</button>
+          <button type="button" class="cat-filter-btn" data-category="hardware">🔨 Hardware &amp; Fixtures</button>
+          <button type="button" class="cat-filter-btn" data-category="plastics">🧴 Plastics &amp; Books</button>
         </div>
 
         <!-- Dynamic Category Cards Grid -->
         <div class="categories-cards-grid" id="categoriesGrid">
-          <!-- Populated dynamically via JS -->
+          <!-- Populated dynamically via JS with interactive cards, subcategory pills & evaluation triggers -->
         </div>
       </div>
     </section>
 
     <!-- ==========================================================================
-         Upcycling & Creative Repurposing Showcase
+         Upcycling & Creative Repurposing Showcase (DIY Focused)
          ========================================================================== -->
     <section class="section" id="upcycling">
       <div class="container">
         <div class="section-header">
-          <div class="section-tag">Upcycling Studio</div>
+          <div class="section-tag">DIY Upcycling Studio</div>
           <h2 class="section-title">Creative Repurposing Ideas</h2>
           <p class="section-desc">
-            When repairing original function is no longer viable, transform durable materials into innovative, useful creations instead of discarding them.
+            When repairing original function is uneconomical, give durable materials a creative second life. Discover practical, step-by-step DIY transformations for every household material stream.
           </p>
         </div>
 
+        <!-- Dynamic Contextual Suggestion Banner (Tailored to active evaluated item) -->
+        <div class="repurpose-context-banner" id="repurposeContextBanner" style="display: none;">
+          <div class="context-banner-content">
+            <span class="context-spark-icon">✨</span>
+            <div>
+              <strong id="repurposeContextTitle">Tailored Repurposing Matches</strong>
+              <p id="repurposeContextDesc">Showing creative ideas tailored for your current item.</p>
+            </div>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" id="repurposeResetFilterBtn">
+            Show All Ideas
+          </button>
+        </div>
+
+        <!-- Repurposing Controls: Category Filters & Live Search -->
+        <div class="repurpose-controls-bar">
+          <div class="repurpose-filter-scroll" id="repurposeFilterBar">
+            <button type="button" class="repurpose-filter-pill active" data-repurpose-cat="all">🌟 All Ideas</button>
+            <button type="button" class="repurpose-filter-pill" data-repurpose-cat="clothing">👕 Clothing &amp; Shoes</button>
+            <button type="button" class="repurpose-filter-pill" data-repurpose-cat="furniture">🪑 Furniture &amp; Wood</button>
+            <button type="button" class="repurpose-filter-pill" data-repurpose-cat="electronics">📱 Electronics &amp; SSDs</button>
+            <button type="button" class="repurpose-filter-pill" data-repurpose-cat="plastics">📚 Books &amp; Plastics</button>
+            <button type="button" class="repurpose-filter-pill" data-repurpose-cat="kitchen">🏺 Glass &amp; Metal</button>
+            <button type="button" class="repurpose-filter-pill" data-repurpose-cat="mechanical">🚲 Bicycles &amp; Gear</button>
+          </div>
+          <div class="repurpose-search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="repurposeSearchInput" class="repurpose-search-input" placeholder="Search DIY ideas (e.g. t-shirt, drawer, SSD, glass, denim)..." aria-label="Search repurposing ideas">
+          </div>
+        </div>
+
+        <!-- Dynamic Repurposing Cards Grid -->
         <div class="upcycling-grid" id="upcyclingGrid">
-          <!-- Populated from REFIX_DATA.upcycleProjects -->
+          <!-- Populated from REFIX_DATA.upcycleProjects via JS -->
         </div>
       </div>
     </section>
@@ -831,7 +984,7 @@
             <div class="timeline-step-num">3</div>
             <h4 class="timeline-step-title">Cost &amp; Carbon Audit</h4>
             <p class="timeline-step-desc">
-              Quantifies avoided CO₂ emissions, landfill mass diverted, and direct wallet savings across all 3 pathways.
+              Quantifies avoided CO₂ emissions, landfill mass diverted, and direct wallet savings across all circular pathways.
             </p>
           </div>
 
@@ -861,7 +1014,7 @@
 
         <div class="directory-controls">
           <input type="text" id="dirSearchInput" class="form-input directory-search" placeholder="🔍 Search repair shops, tailors, or tools...">
-          <button id="openSubmitSpotModal" class="btn btn-secondary btn-sm">
+          <button type="button" id="openSubmitSpotModal" class="btn btn-secondary btn-sm">
             + Submit Local Repair Spot
           </button>
         </div>
@@ -873,19 +1026,19 @@
     </section>
 
     <!-- ==========================================================================
-         About Section & Hackathon Alignment
+         About Section (Zero Unwanted Team Credentials)
          ========================================================================== -->
     <section class="section" id="about">
       <div class="container">
         <div class="about-grid">
           <div>
-            <div class="section-tag">Hackathon Project Mission</div>
+            <div class="section-tag">Mission &amp; Circular Vision</div>
             <h2 class="section-title" style="text-align: left;">Why REFIX?</h2>
             <p style="margin-bottom: 1rem; line-height: 1.7;">
-              Modern consumer culture pushes a default narrative: <em>if it is damaged, throw it out and buy a new one</em>. This fuels planned obsolescence, depletes virgin resources, and fills municipal landfills.
+              Modern consumer culture pushes an unsustainable default narrative: <em>if an object is damaged or unused, throw it away and buy a new one</em>. This fuels planned obsolescence, depletes virgin resources, and fills municipal landfills.
             </p>
             <p style="margin-bottom: 1.5rem; line-height: 1.7;">
-              <strong>REFIX</strong> inverts this dynamic. By evaluating items across all material domains—not just electrical electronics—we democratize circular decision-making, celebrate the Right-to-Repair, and make sustainable choices economically obvious.
+              <strong>REFIX</strong> inverts this dynamic. By evaluating items across all material domains—not just electrical appliances—we democratize circular decision-making, celebrate the Right-to-Repair, and make sustainable choices economically obvious.
             </p>
 
             <div class="sdg-badges-row">
@@ -910,7 +1063,7 @@
           <div class="tech-stack-card">
             <h3 style="font-size: 1.35rem; margin-bottom: 0.75rem;">Engineered for Clarity &amp; Speed</h3>
             <p style="font-size: 0.925rem; line-height: 1.6; margin-bottom: 1.25rem;">
-              Built purely using modern standards for zero-dependency execution. Works out-of-the-box in any browser, accessible offline, and lightning-fast.
+              Built purely using modern web standards for zero-dependency execution. Works out-of-the-box in any browser, accessible offline, and lightning-fast.
             </p>
 
             <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
@@ -927,7 +1080,7 @@
             </div>
 
             <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--text-dim);">
-              <strong>Ethical AI / Algorithmic Transparency:</strong> This tool utilizes deterministic mathematical lifecycle heuristics and open circular benchmarks rather than unverified black-box predictions.
+              <strong>Ethical Algorithmic Transparency:</strong> This tool utilizes deterministic mathematical lifecycle heuristics and open circular benchmarks rather than unverified black-box predictions.
             </div>
           </div>
         </div>
@@ -943,8 +1096,15 @@
       <div class="footer-grid">
         <div>
           <div class="brand-logo">
-            <div class="brand-icon-wrap" style="width: 34px; height: 34px; font-size: 1rem;">
-              <span>🌱</span>
+            <div class="brand-icon-wrap" style="width: 34px; height: 34px;">
+              <svg class="brand-logo-svg" viewBox="0 0 44 44" width="30" height="30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="2" y="2" width="40" height="40" rx="12" fill="#10b981" fill-opacity="0.18"/>
+                <path d="M22 10C15.3726 10 10 15.3726 10 22C10 25.682 11.6601 28.9774 14.28 31.2" stroke="#10b981" stroke-width="2.7" stroke-linecap="round"/>
+                <path d="M22 34C28.6274 34 34 28.6274 34 22C34 17.5 31.5 13.5 28 11.5" stroke="#06b6d4" stroke-width="2.7" stroke-linecap="round"/>
+                <path d="M24 8.5L28.5 11.5L25.5 15.5" stroke="#06b6d4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M20 35.5L15.5 32.5L18.5 28.5" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="22" cy="22" r="3" fill="#10b981"/>
+              </svg>
             </div>
             <span class="brand-name">REFIX</span>
           </div>
@@ -975,19 +1135,19 @@
         </div>
 
         <div>
-          <h4 class="footer-col-title">Hackathon Info</h4>
+          <h4 class="footer-col-title">Platform Scope</h4>
           <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
             REFIX — Fix It First<br>
             Multi-Material Circularity Platform
           </p>
           <div style="font-size: 0.8rem; color: var(--text-dim);">
-            Designed for intuitive judging &amp; real-world community adoption.
+            100% Client-Side • Responsive • Accessible Offline
           </div>
         </div>
       </div>
 
       <div class="footer-bottom">
-        <div>© 2026 REFIX Project. Open Circular Initiative. Built for Hackathon Excellence.</div>
+        <div>© 2026 REFIX — Fix It First. Open Circular Initiative.</div>
         <div>Right to Repair • UN SDG 12 &amp; 13</div>
       </div>
     </div>
@@ -1004,10 +1164,10 @@
           <span style="font-size: 1.4rem;">📷</span>
           <div>
             <h3 class="modal-title" style="font-size: 1.25rem;">Visual Damage Scanner</h3>
-            <span style="font-size: 0.75rem; color: var(--text-dim);">Camera &amp; Computer Vision Inspection (Demo Heuristics)</span>
+            <span style="font-size: 0.75rem; color: var(--text-dim);">Camera &amp; Photo Inspection (Demo Heuristics)</span>
           </div>
         </div>
-        <button class="modal-close-btn" data-close-modal="cameraScannerModal">×</button>
+        <button type="button" class="modal-close-btn" data-close-modal="cameraScannerModal">×</button>
       </div>
       <div class="modal-body" style="padding: 1.5rem;">
         <!-- Scanner Mode Switch Tabs -->
@@ -1055,7 +1215,7 @@
 
           <div class="viewfinder-controls">
             <button type="button" id="capturePhotoBtn" class="btn btn-primary" style="width: 100%;">
-              📸 Capture Damage Photo &amp; Analyze
+              📸 Capture Damage Photo &amp; Inspect
             </button>
           </div>
         </div>
@@ -1063,11 +1223,11 @@
         <!-- TAB 2: Upload Photo File / Drag & Drop -->
         <div class="scanner-tab-pane" id="scannerUploadPane">
           <div class="photo-dropzone" id="photoDropzone">
-            <input type="file" id="damageFileInput" accept="image/*" capture="environment" style="display: none;">
+            <input type="file" id="damageFileInput" accept="image/*" style="display: none;">
             <div class="dropzone-content">
               <span style="font-size: 2.75rem; color: var(--primary);">📥</span>
               <h4 style="margin: 0.5rem 0 0.25rem;">Drop Damage Photo Here</h4>
-              <p style="font-size: 0.825rem; color: var(--text-dim); margin-bottom: 0.75rem;">Supports PNG, JPEG, WebP from computer or phone</p>
+              <p style="font-size: 0.825rem; color: var(--text-dim); margin-bottom: 0.75rem;">Supports PNG, JPEG, WebP from your computer or phone</p>
               <button type="button" id="browsePhotoBtn" class="btn btn-secondary btn-sm">
                 Select Photo File
               </button>
@@ -1078,7 +1238,7 @@
         <!-- TAB 3: Sample Damaged Photos Grid -->
         <div class="scanner-tab-pane" id="scannerSamplesPane">
           <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 0.75rem;">
-            Click any damaged test object to simulate a live camera capture and visual inspection:
+            Click any test object to simulate an inspection photo:
           </p>
           <div class="sample-photos-grid" id="samplePhotosGrid">
             <!-- Rendered from REFIX_DATA.samplePhotos -->
@@ -1090,9 +1250,9 @@
           <div class="analysis-status-header">
             <div class="scanning-spinner" id="analysisSpinner"></div>
             <div>
-              <h4 id="analysisStatusTitle">Visual AI Inspection in Progress...</h4>
+              <h4 id="analysisStatusTitle">Inspection Photo Attached</h4>
               <p id="analysisStatusStep" style="font-size: 0.8rem; color: var(--text-muted);">
-                Analyzing surface fracture contours and texture frequency...
+                Verifying visual defect parameters and material bounds...
               </p>
             </div>
           </div>
@@ -1126,10 +1286,10 @@
 
             <div style="margin-top: 1.25rem; display: flex; gap: 0.75rem; justify-content: flex-end; flex-wrap: wrap;">
               <button type="button" id="retakePhotoBtn" class="btn btn-secondary btn-sm">
-                Retake Photo
+                Change / Retake Photo
               </button>
               <button type="button" id="applyScanBtn" class="btn btn-primary btn-sm">
-                ✓ Apply to Assessment Form &amp; Evaluate
+                ✓ Apply Photo to Assessment
               </button>
             </div>
           </div>
@@ -1143,14 +1303,14 @@
     <div class="modal-dialog">
       <div class="modal-header">
         <h3 class="modal-title">📄 Official REFIX Assessment Certificate</h3>
-        <button class="modal-close-btn" data-close-modal="reportModal">×</button>
+        <button type="button" class="modal-close-btn" data-close-modal="reportModal">×</button>
       </div>
       <div class="modal-body" id="reportModalBody">
         <!-- Rendered dynamically -->
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary btn-sm" data-close-modal="reportModal">Close</button>
-        <button id="triggerPrintBtn" class="btn btn-primary btn-sm">🖨️ Print / Save PDF</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-close-modal="reportModal">Close</button>
+        <button type="button" id="triggerPrintBtn" class="btn btn-primary btn-sm">🖨️ Print / Save PDF</button>
       </div>
     </div>
   </div>
@@ -1159,8 +1319,8 @@
   <div class="modal-overlay" id="methodologyModal">
     <div class="modal-dialog">
       <div class="modal-header">
-        <h3 class="modal-title">📐 Algorithmic Methodology &amp; Benchmarks</h3>
-        <button class="modal-close-btn" data-close-modal="methodologyModal">×</button>
+        <h3 class="modal-title">📖 Algorithmic Methodology &amp; Benchmarks</h3>
+        <button type="button" class="modal-close-btn" data-close-modal="methodologyModal">×</button>
       </div>
       <div class="modal-body" style="font-size: 0.9rem; line-height: 1.6;">
         <h4 style="margin-bottom: 0.5rem; color: var(--primary);">1. Repairability Score Heuristic</h4>
@@ -1172,14 +1332,14 @@
         <h4 style="margin-bottom: 0.5rem; color: var(--repair);">2. Economic Viability Ratio (EVR)</h4>
         <p style="margin-bottom: 1rem;">
           <code>EVR = RepairCost / ReplacementCost</code><br>
-          • <strong>EVR &le; 0.50:</strong> Favorable repair zone.<br>
+          • <strong>EVR &le; 0.50:</strong> Highly favorable repair zone.<br>
           • <strong>0.50 &lt; EVR &le; 0.70:</strong> Secondary consideration (depends on sentimental value and age).<br>
           • <strong>EVR &gt; 0.70:</strong> Triggers REUSE or REPLACE pathway.
         </p>
 
         <h4 style="margin-bottom: 0.5rem; color: var(--replace);">3. Safety &amp; Toxicity Veto Rules</h4>
         <p style="margin-bottom: 1rem;">
-          Certain materials trigger an immediate <strong>REPLACE</strong> veto regardless of cost:
+          Certain materials trigger an immediate <strong>REPLACE</strong> veto regardless of cost:<br>
           • Damaged PTFE / Teflon cookware (toxic fluoropolymer ingestion risk)<br>
           • Fractured impact helmet EPS foam (permanent structural shock loss)<br>
           • Swollen lithium-ion batteries (thermal runaway fire hazard)
@@ -1191,7 +1351,7 @@
         </p>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-primary btn-sm" data-close-modal="methodologyModal">Understood</button>
+        <button type="button" class="btn btn-primary btn-sm" data-close-modal="methodologyModal">Understood</button>
       </div>
     </div>
   </div>
@@ -1201,13 +1361,13 @@
     <div class="modal-dialog">
       <div class="modal-header">
         <h3 class="modal-title">📍 Submit a Local Repair Shop or Space</h3>
-        <button class="modal-close-btn" data-close-modal="submitSpotModal">×</button>
+        <button type="button" class="modal-close-btn" data-close-modal="submitSpotModal">×</button>
       </div>
       <div class="modal-body">
         <form id="submitSpotForm">
           <div class="form-group">
             <label class="form-label" for="spotName">Shop or Workshop Name</label>
-            <input type="text" id="spotName" class="form-input" placeholder="e.g. Eastside Cobbler & Tailor" required>
+            <input type="text" id="spotName" class="form-input" placeholder="e.g. Eastside Cobbler &amp; Tailor" required>
           </div>
           <div class="form-row">
             <div class="form-group">
@@ -1215,8 +1375,8 @@
               <select id="spotType" class="form-select" required>
                 <option value="Repair Cafe / Volunteer">Repair Cafe / Volunteer</option>
                 <option value="Professional Cobbler / Leather">Cobbler &amp; Leather</option>
-                <option value="Tailor & Textile Mending">Tailor &amp; Textile Mending</option>
-                <option value="Electronics & Appliance Fixer">Electronics &amp; Appliance Fixer</option>
+                <option value="Tailor &amp; Textile Mending">Tailor &amp; Textile Mending</option>
+                <option value="Electronics &amp; Appliance Fixer">Electronics &amp; Appliance Fixer</option>
                 <option value="Tool Lending Library">Tool Lending Library</option>
                 <option value="Certified E-Waste Depot">Certified E-Waste Depot</option>
               </select>
@@ -1235,15 +1395,38 @@
             <input type="text" id="spotServices" class="form-input" placeholder="e.g. Denim patches, Boots, Blenders, Bikes" required>
           </div>
           <div style="text-align: right; margin-top: 1.5rem;">
-            <button type="submit" class="btn btn-primary">Submit for Verification</button>
+            <button type="submit" id="submitSpotConfirmBtn" class="btn btn-primary">Submit for Verification</button>
           </div>
         </form>
       </div>
     </div>
   </div>
 
+  <!-- Repurposing Step-by-Step DIY Guide Modal -->
+  <div class="modal-overlay" id="repurposeGuideModal">
+    <div class="modal-dialog repurpose-modal-dialog">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <span id="guideModalIcon" style="font-size: 1.75rem;">✂️</span>
+          <div>
+            <h3 class="modal-title" id="guideModalTitle" style="font-size: 1.25rem;">DIY Repurposing Guide</h3>
+            <span id="guideModalSubtitle" style="font-size: 0.8rem; color: var(--text-dim);">Step-by-Step Transformation Blueprint</span>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" data-close-modal="repurposeGuideModal">×</button>
+      </div>
+      <div class="modal-body" id="repurposeGuideBody" style="padding: 1.5rem;">
+        <!-- Rendered dynamically via JS -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-close-modal="repurposeGuideModal">Close Guide</button>
+        <button type="button" class="btn btn-primary btn-sm" id="guideModalLoadEngineBtn">Evaluate this Material in Engine →</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Floating Mobile/Compact Result Jump Button -->
-  <button id="floatingResultBtn" class="floating-result-btn" title="Jump to Verdict Result" aria-label="View Recommendation Result">
+  <button type="button" id="floatingResultBtn" class="floating-result-btn" title="Jump to Verdict Result" aria-label="View Recommendation Result">
     <span>📊 View Recommendation</span>
     <span id="floatingVerdictBadge" class="floating-verdict-badge verdict-repair">🟢 REPAIR</span>
   </button>
