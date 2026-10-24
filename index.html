@@ -58,29 +58,25 @@
         </div>
       </a>
 
-      <!-- Desktop Navigation Links (Evenly distributed) -->
-      <ul class="nav-links" id="navLinks">
-        <li><a href="#engine" class="nav-link active">Decision Engine</a></li>
-        <li><a href="#framework" class="nav-link">3Rs Cycle</a></li>
-        <li><a href="#categories" class="nav-link">Universal Scope</a></li>
-        <li><a href="#upcycling" class="nav-link">Repurposing Ideas</a></li>
-        <li><a href="#simulator" class="nav-link">Impact Simulator</a></li>
-        <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
-        <li><a href="#directory" class="nav-link">Local Repair</a></li>
-        <li><a href="#about" class="nav-link">About</a></li>
-      </ul>
+      <!-- Desktop & Mobile Navigation Links (Distributed & Accessible) -->
+      <nav class="nav-container" aria-label="Primary Navigation">
+        <ul class="nav-links" id="navLinks" role="menubar">
+          <li role="none"><a href="#engine" class="nav-link active" role="menuitem">Decision Engine</a></li>
+          <li role="none"><a href="#framework" class="nav-link" role="menuitem">3Rs Cycle</a></li>
+          <li role="none"><a href="#categories" class="nav-link" role="menuitem">Universal Scope</a></li>
+          <li role="none"><a href="#upcycling" class="nav-link" role="menuitem">Repurposing Ideas</a></li>
+          <li role="none"><a href="#simulator" class="nav-link" role="menuitem">Impact Simulator</a></li>
+          <li role="none"><a href="#how-it-works" class="nav-link" role="menuitem">How It Works</a></li>
+          <li role="none"><a href="#directory" class="nav-link" id="navLinkLocalRepair" role="menuitem">Local Repair</a></li>
+          <li role="none"><a href="#about" class="nav-link" id="navLinkAbout" role="menuitem">About</a></li>
+        </ul>
+      </nav>
 
       <!-- Action Utilities -->
       <div class="nav-actions">
-        <!-- Currency Selector with verified benchmark tag -->
-        <div class="currency-select-wrap">
-          <select id="currencySelect" class="currency-select" title="Global Currency: Q4 2024 Reference Benchmarks (1 USD = 0.92 EUR = 0.79 GBP = 83.50 INR)">
-            <option value="USD">USD ($)</option>
-            <option value="EUR">EUR (€)</option>
-            <option value="GBP">GBP (£)</option>
-            <option value="INR">INR (₹)</option>
-          </select>
-          <span id="currencyRateBadge" class="currency-rate-badge" title="Benchmark Rates: 1 USD = 0.92 EUR | 0.79 GBP | 83.50 INR (Q4 '24 ECB/IMF)">Q4 '24 ECB</span>
+        <!-- Standard INR (₹) Currency Badge (Illustrative Estimates) -->
+        <div class="currency-badge-wrap" title="All monetary values are in Indian Rupees (₹) as illustrative estimates.">
+          <span class="currency-inr-pill">₹ INR <small>(Illustrative)</small></span>
         </div>
 
         <!-- Audio feedback toggle -->
@@ -99,8 +95,8 @@
         </a>
 
         <!-- Mobile Menu Hamburger -->
-        <button id="mobileNavToggle" class="mobile-toggle" aria-label="Toggle Menu">
-          <span>☰</span>
+        <button id="mobileNavToggle" class="mobile-toggle" aria-label="Toggle Navigation Menu" aria-expanded="false" aria-controls="navLinks">
+          <span aria-hidden="true">☰</span>
         </button>
       </div>
     </div>
@@ -150,7 +146,7 @@
               <p>CO₂e Diverted</p>
             </div>
             <div class="stat-item">
-              <h4 id="heroStatsMoney">$142K+</h4>
+              <h4 id="heroStatsMoney">₹1.2Cr+</h4>
               <p>User Money Saved</p>
             </div>
           </div>
@@ -178,11 +174,11 @@
             </div>
             <h4 id="heroPreviewTitle" style="margin-bottom: 0.35rem; font-size: 1.1rem;">Solid Oak Dining Chair</h4>
             <p id="heroPreviewSummary" class="preview-summary">
-              Joint is wobbly but wood fibers are sound. Repairing costs only 8% of buying new and avoids 42kg CO₂ emissions.
+              Joint is wobbly but wood fibers are sound. Repairing costs only 10% of buying new and avoids 42kg CO₂ emissions.
             </p>
             <div class="preview-metrics-grid">
               <div class="mini-metric">
-                Est. Money Saved: <span id="heroPreviewSavings">$128</span>
+                Est. Money Saved: <span id="heroPreviewSavings">₹4,050</span>
               </div>
               <div class="mini-metric">
                 Carbon Diverted: <span id="heroPreviewCarbon">42 kg CO₂</span>
@@ -498,24 +494,24 @@
                 <div class="form-row">
                   <div class="form-group">
                     <label class="form-label" for="originalCost">
-                      New Replacement Price (<span class="currency-symbol-label">$</span>)
+                      New Replacement Price (<span class="currency-symbol-label">₹</span>) <small style="color: var(--text-dim); font-size: 0.75rem;">(Illustrative Estimate)</small>
                     </label>
                     <div class="input-with-symbol">
-                      <span class="input-symbol currency-symbol-label">$</span>
-                      <input type="number" id="originalCost" class="form-input" min="1" step="1" value="140" required>
+                      <span class="input-symbol currency-symbol-label">₹</span>
+                      <input type="number" id="originalCost" class="form-input" min="1" step="1" value="4500" required>
                     </div>
                   </div>
 
                   <div class="form-group">
                     <label class="form-label" for="repairCost">
-                      Estimated Repair Cost (<span class="currency-symbol-label">$</span>)
+                      Estimated Repair Cost (<span class="currency-symbol-label">₹</span>) <small style="color: var(--text-dim); font-size: 0.75rem;">(Illustrative Estimate)</small>
                     </label>
                     <div class="input-with-symbol">
-                      <span class="input-symbol currency-symbol-label">$</span>
-                      <input type="number" id="repairCost" class="form-input" min="0" step="1" value="12">
+                      <span class="input-symbol currency-symbol-label">₹</span>
+                      <input type="number" id="repairCost" class="form-input" min="0" step="1" value="450">
                     </div>
                     <small style="display: block; margin-top: 0.35rem; color: var(--text-dim);">
-                      Leave blank or 0 to let REFIX benchmark it automatically.
+                      Estimated illustrative repair cost; editable anytime.
                     </small>
                   </div>
                 </div>
@@ -605,7 +601,7 @@
                       <p class="decision-card-desc" id="decisionCardDesc">Mortise joint loose; wood fibers sound.</p>
                       <div class="decision-card-meta">
                         <span id="decisionCardCatText">Furniture • Solid Wood</span>
-                        <span id="decisionCardPriceText">Est. New: $140</span>
+                        <span id="decisionCardPriceText">Est. New: ₹4,500</span>
                       </div>
                     </div>
                   </div>
@@ -720,8 +716,8 @@
             <!-- Cost Comparison Visual Bars -->
             <div class="cost-comparison-card">
               <div class="cost-card-header">
-                <span class="cost-card-title">Cost Comparison Breakdown</span>
-                <span class="savings-highlight" id="resSavingsHighlight">Save $128 (91%)</span>
+                <span class="cost-card-title">Cost Comparison <small style="font-weight: 500; font-size: 0.72rem; color: var(--text-dim);">(Illustrative Estimates)</small></span>
+                <span class="savings-highlight" id="resSavingsHighlight">Save ₹4,050 (90%)</span>
               </div>
 
               <div class="comparison-bars-group">
@@ -729,18 +725,18 @@
                 <div class="cost-row">
                   <span class="cost-row-label">To Repair</span>
                   <div class="bar-track">
-                    <div class="bar-fill bar-repair" id="barRepairWidth" style="width: 9%;"></div>
+                    <div class="bar-fill bar-repair" id="barRepairWidth" style="width: 10%;"></div>
                   </div>
-                  <span class="cost-value-text" id="resRepairCostVal">$12</span>
+                  <span class="cost-value-text" id="resRepairCostVal">₹450</span>
                 </div>
 
                 <!-- Repurpose Cost Row -->
                 <div class="cost-row">
                   <span class="cost-row-label">To Repurpose</span>
                   <div class="bar-track">
-                    <div class="bar-fill bar-repurpose" id="barRepurposeWidth" style="width: 12%;"></div>
+                    <div class="bar-fill bar-repurpose" id="barRepurposeWidth" style="width: 13%;"></div>
                   </div>
-                  <span class="cost-value-text" id="resRepurposeCostVal">$17</span>
+                  <span class="cost-value-text" id="resRepurposeCostVal">₹600</span>
                 </div>
 
                 <!-- Replace Cost Row -->
@@ -749,7 +745,7 @@
                   <div class="bar-track">
                     <div class="bar-fill bar-replace" style="width: 100%;"></div>
                   </div>
-                  <span class="cost-value-text" id="resReplaceCostVal">$140</span>
+                  <span class="cost-value-text" id="resReplaceCostVal">₹4,500</span>
                 </div>
               </div>
             </div>
@@ -858,40 +854,18 @@
           </p>
         </div>
 
-        <!-- Dynamic Contextual Suggestion Banner (Tailored to active evaluated item) -->
-        <div class="repurpose-context-banner" id="repurposeContextBanner" style="display: none;">
-          <div class="context-banner-content">
-            <span class="context-spark-icon">✨</span>
-            <div>
-              <strong id="repurposeContextTitle">Tailored Repurposing Matches</strong>
-              <p id="repurposeContextDesc">Showing creative ideas tailored for your current item.</p>
-            </div>
+        <!-- Compact Curated Context Bar for Currently Selected Item -->
+        <div class="repurpose-active-context" id="repurposeActiveContext">
+          <div class="repurpose-context-pill">
+            <span>✨</span>
+            <span>Repurposing Ideas for: <strong id="repurposeContextItemName">Solid Oak Dining Chair</strong></span>
           </div>
-          <button type="button" class="btn btn-secondary btn-sm" id="repurposeResetFilterBtn">
-            Show All Ideas
-          </button>
+          <span class="repurpose-context-sub">Displaying up to 3 practical DIY reuse ideas tailored to this item's material.</span>
         </div>
 
-        <!-- Repurposing Controls: Category Filters & Live Search -->
-        <div class="repurpose-controls-bar">
-          <div class="repurpose-filter-scroll" id="repurposeFilterBar">
-            <button type="button" class="repurpose-filter-pill active" data-repurpose-cat="all">🌟 All Ideas</button>
-            <button type="button" class="repurpose-filter-pill" data-repurpose-cat="clothing">👕 Clothing &amp; Shoes</button>
-            <button type="button" class="repurpose-filter-pill" data-repurpose-cat="furniture">🪑 Furniture &amp; Wood</button>
-            <button type="button" class="repurpose-filter-pill" data-repurpose-cat="electronics">📱 Electronics &amp; SSDs</button>
-            <button type="button" class="repurpose-filter-pill" data-repurpose-cat="plastics">📚 Books &amp; Plastics</button>
-            <button type="button" class="repurpose-filter-pill" data-repurpose-cat="kitchen">🏺 Glass &amp; Metal</button>
-            <button type="button" class="repurpose-filter-pill" data-repurpose-cat="mechanical">🚲 Bicycles &amp; Gear</button>
-          </div>
-          <div class="repurpose-search-wrap">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="repurposeSearchInput" class="repurpose-search-input" placeholder="Search DIY ideas (e.g. t-shirt, drawer, SSD, glass, denim)..." aria-label="Search repurposing ideas">
-          </div>
-        </div>
-
-        <!-- Dynamic Repurposing Cards Grid -->
-        <div class="upcycling-grid" id="upcyclingGrid">
-          <!-- Populated from REFIX_DATA.upcycleProjects via JS -->
+        <!-- Compact 3-Card Responsive Grid -->
+        <div class="upcycling-grid compact-three-grid" id="upcyclingGrid">
+          <!-- Populated with max 3 relevant ideas dynamically via JS -->
         </div>
       </div>
     </section>
@@ -924,8 +898,8 @@
           <div class="simulator-results-grid">
             <div class="sim-metric-card">
               <div class="sim-metric-icon">💰</div>
-              <div class="sim-metric-val" id="simMoneyVal">$28,500</div>
-              <div class="sim-metric-name">Money Saved</div>
+              <div class="sim-metric-val" id="simMoneyVal">₹2,38,000</div>
+              <div class="sim-metric-name">Money Saved (Illustrative)</div>
             </div>
 
             <div class="sim-metric-card">
@@ -1002,7 +976,8 @@
     <!-- ==========================================================================
          Community Repair & Drop-Off Directory Section
          ========================================================================== -->
-    <section class="section" id="directory">
+    <section class="section" id="directory" data-section="local-repair">
+      <span id="local-repair" class="section-anchor" aria-hidden="true"></span>
       <div class="container">
         <div class="section-header">
           <div class="section-tag">Local Ecosystem</div>
@@ -1121,6 +1096,7 @@
             <li><a href="#categories">Material Categories</a></li>
             <li><a href="#upcycling">Upcycle Studio</a></li>
             <li><a href="#simulator">Impact Simulator</a></li>
+            <li><a href="#about">About REFIX</a></li>
           </ul>
         </div>
 

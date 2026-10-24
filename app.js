@@ -4,9 +4,10 @@
  * 
  * Features:
  * - Deterministic circularity decision engine & lifecycle analysis
- * - Global shared currency switcher (USD, EUR, GBP, INR) with verified Q4 2024 benchmarks
+ * - Pure INR (₹) illustrative pricing & consistent cost comparisons across the entire application
+ * - Single source of truth (state.selectedItem) ensuring instantaneous synchronized updates across all components
  * - Interactive Universal Scope section with subcategory/appliance selection & Solid State Drive (SSD)
- * - Enhanced DIY Creative Repurposing Studio with multi-category filters, search, and dynamic contextual suggestions
+ * - Curated DIY Creative Repurposing Studio with dynamic contextual 3-card suggestions
  * - Visual damage scanner with device camera, photo upload & verified defect inspection
  * - HTML5 Drag-and-Drop spatial interaction for primary evaluation verdicts with mobile tap fallback
  * - Dark/Light theme, Web Audio synthesizer, and balanced responsive navigation
@@ -23,12 +24,33 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   const engine = new window.RefixEngine(data);
 
+  // Single source of truth for the currently selected item
+  const initialDefaultItem = {
+    id: 'oak_chair',
+    name: 'Solid Oak Dining Chair',
+    itemTitle: 'Solid Oak Dining Chair',
+    category: 'furniture',
+    material: 'hardwood',
+    ageYears: 6,
+    damageSeverity: 'minor',
+    damageDetails: 'Loose front joint, cosmetic lacquer scratches along side rungs',
+    partsAvailability: 'readily_available',
+    userSkill: 'intermediate',
+    originalCost: 4500,
+    repairCost: 450,
+    repurposeCost: 600,
+    reuseValue: 2800,
+    expectedVerdict: 'REPAIR',
+    icon: '🪑'
+  };
+
   const state = {
-    currency: localStorage.getItem('refix_currency') || 'USD',
+    currency: 'INR',
     theme: localStorage.getItem('refix_theme') || 'dark',
     sound: localStorage.getItem('refix_sound') !== 'false',
     currentStep: 1,
     currentAssessment: null,
+    selectedItem: { ...initialDefaultItem },
     activeCategoryFilter: 'all',
     selectedScopeCategory: 'furniture',
     activeSubcategory: 'Solid Oak Dining Chair',
@@ -39,10 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
     cameraStream: null,
     scannedPhoto: null,
     activeDraggedItem: null,
-    selectedItemForTap: null,
-    // Base USD benchmark costs for seamless currency conversion in form inputs
-    baseOriginalUSD: 140,
-    baseRepairUSD: 12
+    selectedItemForTap: null
   };
 
   // ==========================================================================
@@ -99,79 +118,24 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================================================
-  // 3. Shared Global Currency Engine
+  // 3. Indian Rupee (₹) Money Formatter & Label Manager
   // ==========================================================================
-  function formatMoney(amountUSD) {
-    const cur = data.currencies[state.currency] || data.currencies.USD;
-    const converted = amountUSD * cur.rate;
-    
-    if (state.currency === 'INR') {
-      return `${cur.symbol}${Math.round(converted).toLocaleString('en-IN')}`;
-    }
-    return `${cur.symbol}${Math.round(converted).toLocaleString('en-US')}`;
+  function formatMoney(amountINR) {
+    const num = Math.max(0, Math.round(Number(amountINR) || 0));
+    return `₹${num.toLocaleString('en-IN')}`;
   }
 
   function updateHeroSavingsStat() {
     const heroStatsMoney = document.getElementById('heroStatsMoney');
-    if (!heroStatsMoney) return;
-    const cur = data.currencies[state.currency] || data.currencies.USD;
-    const converted = 142000 * cur.rate;
-
-    if (state.currency === 'INR') {
-      heroStatsMoney.textContent = `₹${(converted / 10000000).toFixed(2)}Cr+`;
-    } else if (state.currency === 'EUR') {
-      heroStatsMoney.textContent = `€${Math.round(converted / 1000)}K+`;
-    } else if (state.currency === 'GBP') {
-      heroStatsMoney.textContent = `£${Math.round(converted / 1000)}K+`;
-    } else {
-      heroStatsMoney.textContent = `$${Math.round(converted / 1000)}K+`;
+    if (heroStatsMoney) {
+      heroStatsMoney.textContent = '₹1.2Cr+';
     }
   }
 
   function updateCurrencyLabels() {
-    const cur = data.currencies[state.currency] || data.currencies.USD;
-
-    // 1. Update all currency symbol labels across the page
     document.querySelectorAll('.currency-symbol-label').forEach(el => {
-      el.textContent = cur.symbol;
+      el.textContent = '₹';
     });
-
-    // 2. Update currency rate benchmark badge
-    const rateBadge = document.getElementById('currencyRateBadge');
-    if (rateBadge) {
-      rateBadge.textContent = cur.benchmark;
-    }
-
-    // 3. Convert numeric values in active form inputs based on base USD values
-    const origInput = document.getElementById('originalCost');
-    const repInput = document.getElementById('repairCost');
-    if (origInput) {
-      origInput.value = Math.round(state.baseOriginalUSD * cur.rate);
-    }
-    if (repInput) {
-      repInput.value = Math.round(state.baseRepairUSD * cur.rate);
-    }
-
-    // 4. Update Hero counter & Hero preview card
-    updateHeroSavingsStat();
-    updateHeroPreview();
-
-    // 5. Update Draggable Item Card display
-    syncFormDraggableCard();
-
-    // 6. Update Recommendation Result Panel if assessment exists
-    if (state.currentAssessment) {
-      renderResultPanel(state.currentAssessment);
-    }
-
-    // 7. Update presets ribbon chips
-    renderPresets();
-
-    // 8. Update Repurposing Studio cards
-    renderUpcycling();
-
-    // 9. Update Community Impact Simulator
-    updateSimulator();
   }
 
   // Toast Notifications
@@ -238,34 +202,83 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Currency Selector Listener
-  const currencySelect = document.getElementById('currencySelect');
-  if (currencySelect) {
-    currencySelect.value = state.currency;
-    currencySelect.addEventListener('change', (e) => {
-      playClick();
-      state.currency = e.target.value;
-      localStorage.setItem('refix_currency', state.currency);
-      updateCurrencyLabels();
-      const cur = data.currencies[state.currency];
-      showToast(`Currency: ${cur.name} (${cur.symbol}) • Rate: ${cur.benchmark}`, 'info');
+  // Mobile Navigation Toggle & Accessible Link Navigation
+  const mobileNavToggle = document.getElementById('mobileNavToggle');
+  const navLinksContainer = document.getElementById('navLinks');
+  const allNavLinks = document.querySelectorAll('.nav-link');
+
+  if (mobileNavToggle && navLinksContainer) {
+    mobileNavToggle.addEventListener('click', () => {
+      const isOpen = navLinksContainer.classList.toggle('mobile-open');
+      mobileNavToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
     });
   }
 
-  // Mobile Navigation Toggle
-  const mobileNavToggle = document.getElementById('mobileNavToggle');
-  const navLinks = document.getElementById('navLinks');
-  if (mobileNavToggle && navLinks) {
-    mobileNavToggle.addEventListener('click', () => {
-      navLinks.classList.toggle('mobile-open');
+  // Navigation Links Click & Smooth Target Handling
+  allNavLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      const href = link.getAttribute('href');
+      if (href && href.startsWith('#')) {
+        const targetId = href.substring(1);
+        let targetEl = document.getElementById(targetId);
+        
+        // Match aliases if needed
+        if (!targetEl && (targetId === 'local-repair' || targetId === 'localrepair')) {
+          targetEl = document.getElementById('directory');
+        } else if (!targetEl && targetId === 'directory') {
+          targetEl = document.getElementById('local-repair');
+        }
+
+        if (targetEl) {
+          e.preventDefault();
+          allNavLinks.forEach(l => l.classList.remove('active'));
+          link.classList.add('active');
+
+          if (navLinksContainer) {
+            navLinksContainer.classList.remove('mobile-open');
+            if (mobileNavToggle) {
+              mobileNavToggle.setAttribute('aria-expanded', 'false');
+            }
+          }
+
+          targetEl.scrollIntoView({ behavior: 'smooth' });
+          if (window.history && window.history.pushState) {
+            window.history.pushState(null, '', href);
+          }
+        }
+      }
     });
-    navLinks.querySelectorAll('a').forEach(link => {
-      link.addEventListener('click', () => navLinks.classList.remove('mobile-open'));
-    });
+  });
+
+  // Active section spy
+  const trackedSectionIds = ['engine', 'framework', 'categories', 'upcycling', 'simulator', 'how-it-works', 'directory', 'about'];
+  const trackedSections = trackedSectionIds.map(id => document.getElementById(id)).filter(Boolean);
+
+  if ('IntersectionObserver' in window && trackedSections.length > 0) {
+    const navObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const currentId = entry.target.id;
+          allNavLinks.forEach(link => {
+            const linkHref = link.getAttribute('href');
+            if (
+              linkHref === `#${currentId}` || 
+              (currentId === 'directory' && (linkHref === '#local-repair' || linkHref === '#directory'))
+            ) {
+              link.classList.add('active');
+            } else {
+              link.classList.remove('active');
+            }
+          });
+        }
+      });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+
+    trackedSections.forEach(sec => navObserver.observe(sec));
   }
 
   // ==========================================================================
-  // 5. Form Category & Material Selectors Setup
+  // 5. Category & Material Dropdown Selectors
   // ==========================================================================
   const categorySelect = document.getElementById('itemCategory');
   const materialSelect = document.getElementById('itemMaterial');
@@ -300,34 +313,14 @@ document.addEventListener('DOMContentLoaded', () => {
     categorySelect.addEventListener('change', (e) => {
       state.selectedScopeCategory = e.target.value;
       populateMaterialsForCategory(e.target.value);
-      syncFormDraggableCard();
+      handleManualFormUpdate();
       highlightActiveScopeCard(e.target.value);
     });
   }
 
   if (materialSelect) {
     materialSelect.addEventListener('change', () => {
-      syncFormDraggableCard();
-    });
-  }
-
-  // Cost input listeners to update base USD values cleanly
-  const origCostInput = document.getElementById('originalCost');
-  const repairCostInput = document.getElementById('repairCost');
-  if (origCostInput) {
-    origCostInput.addEventListener('input', () => {
-      const cur = data.currencies[state.currency] || data.currencies.USD;
-      const val = parseFloat(origCostInput.value) || 0;
-      state.baseOriginalUSD = val / cur.rate;
-      syncFormDraggableCard();
-    });
-  }
-  if (repairCostInput) {
-    repairCostInput.addEventListener('input', () => {
-      const cur = data.currencies[state.currency] || data.currencies.USD;
-      const val = parseFloat(repairCostInput.value) || 0;
-      state.baseRepairUSD = val / cur.rate;
-      syncFormDraggableCard();
+      handleManualFormUpdate();
     });
   }
 
@@ -472,11 +465,12 @@ document.addEventListener('DOMContentLoaded', () => {
         input.checked = true;
         const groupName = input.name;
         document.querySelectorAll(`input[name="${groupName}"]`).forEach(other => {
-          other.closest('.radio-card').classList.remove('selected');
+          const c = other.closest('.radio-card');
+          if (c) c.classList.remove('selected');
         });
         card.classList.add('selected');
         playClick();
-        syncFormDraggableCard();
+        handleManualFormUpdate();
       }
     });
   });
@@ -499,42 +493,161 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================================================
-  // 7. Form Data Collection & Draggable Card Synchronization
+  // 7. UNIFIED ITEM SELECTION & SYNCHRONIZED STATE MANAGEMENT
   // ==========================================================================
   const form = document.getElementById('assessmentForm');
 
+  /**
+   * Reads raw form inputs in INR and updates state.selectedItem
+   */
   function collectFormData() {
-    const cur = data.currencies[state.currency] || data.currencies.USD;
-    const originalLocal = parseFloat(document.getElementById('originalCost').value) || 50;
-    const repairLocal = parseFloat(document.getElementById('repairCost').value) || 0;
-
-    const originalCostUSD = originalLocal / cur.rate;
-    const repairCostUSD = repairLocal / cur.rate;
-
-    // Keep base USD in state
-    state.baseOriginalUSD = originalCostUSD;
-    state.baseRepairUSD = repairCostUSD;
-
+    const origInput = document.getElementById('originalCost');
+    const repInput = document.getElementById('repairCost');
+    const titleInput = document.getElementById('itemTitle');
+    const ageInput = document.getElementById('itemAge');
+    const detailsInput = document.getElementById('damageDetails');
+    const partsInput = document.getElementById('partsAvailability');
+    const skillInput = document.getElementById('userSkill');
     const severityRadio = document.querySelector('input[name="damageSeverity"]:checked');
-    const cat = data.categories.find(c => c.id === categorySelect.value) || data.categories[0];
 
-    return {
-      category: categorySelect.value,
-      material: materialSelect.value,
-      itemTitle: document.getElementById('itemTitle').value || `${cat.name} Object`,
-      ageYears: parseFloat(document.getElementById('itemAge').value) || 1,
-      damageSeverity: severityRadio ? severityRadio.value : 'minor',
-      damageDetails: document.getElementById('damageDetails').value || '',
-      partsAvailability: document.getElementById('partsAvailability').value || 'available',
-      userSkill: document.getElementById('userSkill').value || 'intermediate',
-      originalCost: originalCostUSD,
-      repairCost: repairCostUSD,
-      icon: cat ? cat.icon : '📦'
+    const origVal = origInput ? Math.max(50, parseFloat(origInput.value) || 4500) : 4500;
+    const repVal = repInput ? Math.max(0, parseFloat(repInput.value) || 450) : 450;
+    const catId = categorySelect ? categorySelect.value : (state.selectedItem ? state.selectedItem.category : 'furniture');
+    const cat = data.categories.find(c => c.id === catId) || data.categories[0];
+    const itemTitle = (titleInput && titleInput.value.trim()) ? titleInput.value.trim() : (state.selectedItem ? state.selectedItem.name : `${cat.name} Object`);
+
+    const matVal = (materialSelect && materialSelect.value) ? materialSelect.value : (cat.materials && cat.materials[0] ? cat.materials[0].id : 'standard');
+    const sevVal = severityRadio ? severityRadio.value : (state.selectedItem ? state.selectedItem.damageSeverity : 'minor');
+    const ageVal = ageInput ? (parseFloat(ageInput.value) || 2) : 2;
+    const detailsVal = detailsInput ? detailsInput.value : '';
+    const partsVal = partsInput ? partsInput.value : 'available';
+    const skillVal = skillInput ? skillInput.value : 'intermediate';
+
+    const item = {
+      id: state.selectedItem ? state.selectedItem.id : 'item_' + Date.now(),
+      name: itemTitle,
+      itemTitle: itemTitle,
+      category: catId,
+      material: matVal,
+      ageYears: ageVal,
+      damageSeverity: sevVal,
+      damageDetails: detailsVal,
+      partsAvailability: partsVal,
+      userSkill: skillVal,
+      originalCost: origVal,
+      repairCost: repVal,
+      repurposeCost: state.selectedItem ? state.selectedItem.repurposeCost : Math.round(origVal * 0.25),
+      reuseValue: state.selectedItem ? state.selectedItem.reuseValue : Math.round(origVal * 0.6),
+      icon: cat ? cat.icon : '📦',
+      expectedVerdict: sevVal === 'critical' ? 'REPLACE' : 'REPAIR'
     };
+
+    state.selectedItem = item;
+    return item;
+  }
+
+  /**
+   * Primary unified selector: Single source of truth.
+   * Updates state, form inputs, draggable card, active highlights, drop verdict, and repurposing ideas.
+   */
+  function selectItem(itemData, targetAction = null) {
+    if (!itemData) return;
+
+    const name = itemData.itemTitle || itemData.name || 'Selected Item';
+    const catId = itemData.category || 'furniture';
+
+    // Look up distinct subcategory defaults if available
+    const subDef = (data.subcategoryDefaults && data.subcategoryDefaults[name]) || {};
+
+    const originalCost = Math.round(Number(itemData.originalCost || itemData.originalCostUSD || subDef.originalCost || 4500));
+    const repairCost = Math.round(Number(itemData.repairCost || itemData.repairCostUSD || subDef.repairCost || Math.round(originalCost * 0.2)));
+    const repurposeCost = Math.round(Number(itemData.repurposeCost || subDef.repurposeCost || Math.round(originalCost * 0.25)));
+    const reuseValue = Math.round(Number(itemData.reuseValue || subDef.reuseValue || Math.round(originalCost * 0.6)));
+
+    const catObj = data.categories.find(c => c.id === catId) || data.categories[0];
+    const materialId = itemData.material || subDef.material || (catObj.materials[0] ? catObj.materials[0].id : 'standard');
+    const ageYears = Number(itemData.ageYears || subDef.ageYears || 2);
+    const damageSeverity = itemData.damageSeverity || subDef.damageSeverity || 'minor';
+    const damageDetails = itemData.damageDetails || subDef.damageDetails || 'Standard wear observed';
+    const partsAvailability = itemData.partsAvailability || subDef.partsAvailability || 'available';
+    const userSkill = itemData.userSkill || subDef.userSkill || 'intermediate';
+    const icon = itemData.icon || subDef.icon || catObj.icon || '📦';
+    const expectedVerdict = itemData.expectedVerdict || (damageSeverity === 'critical' ? 'REPLACE' : 'REPAIR');
+
+    // 1. Commit into shared state as single source of truth
+    state.selectedItem = {
+      id: itemData.id || name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+      name: name,
+      itemTitle: name,
+      category: catId,
+      material: materialId,
+      ageYears: ageYears,
+      damageSeverity: damageSeverity,
+      damageDetails: damageDetails,
+      partsAvailability: partsAvailability,
+      userSkill: userSkill,
+      originalCost: originalCost,
+      repairCost: repairCost,
+      repurposeCost: repurposeCost,
+      reuseValue: reuseValue,
+      expectedVerdict: expectedVerdict,
+      icon: icon
+    };
+
+    state.selectedScopeCategory = catId;
+    state.activeSubcategory = name;
+
+    // 2. Synchronously write values to HTML form inputs (no race conditions)
+    if (categorySelect) categorySelect.value = catId;
+    populateMaterialsForCategory(catId);
+    if (materialSelect) materialSelect.value = materialId;
+
+    const titleInput = document.getElementById('itemTitle');
+    const ageInput = document.getElementById('itemAge');
+    const detailsInput = document.getElementById('damageDetails');
+    const origInput = document.getElementById('originalCost');
+    const repInput = document.getElementById('repairCost');
+    const partsInput = document.getElementById('partsAvailability');
+    const skillInput = document.getElementById('userSkill');
+
+    if (titleInput) titleInput.value = name;
+    if (ageInput) ageInput.value = ageYears;
+    if (detailsInput) detailsInput.value = damageDetails;
+    if (origInput) origInput.value = originalCost;
+    if (repInput) repInput.value = repairCost;
+    if (partsInput) partsInput.value = partsAvailability;
+    if (skillInput) skillInput.value = userSkill;
+
+    const radio = document.querySelector(`input[name="damageSeverity"][value="${damageSeverity}"]`);
+    if (radio) {
+      radio.checked = true;
+      document.querySelectorAll('input[name="damageSeverity"]').forEach(r => {
+        const card = r.closest('.radio-card');
+        if (card) card.classList.remove('selected');
+      });
+      const card = radio.closest('.radio-card');
+      if (card) card.classList.add('selected');
+    }
+
+    // 3. Synchronize Draggable Decision Card
+    syncFormDraggableCard();
+
+    // 4. Update Universal Scope active chips and cards
+    highlightActiveScopeCard(catId);
+    document.querySelectorAll('.cat-sub-item-chip').forEach(ch => {
+      ch.classList.toggle('is-active', ch.getAttribute('data-sub-name') === name);
+    });
+
+    // 5. Evaluate drop / verdict with engine
+    const actionToEvaluate = targetAction || (expectedVerdict ? expectedVerdict.toLowerCase() : 'repair');
+    executeDropEvaluation(state.selectedItem, actionToEvaluate);
+
+    // 6. Refresh the simplified 3-card Repurposing section
+    renderUpcycling();
   }
 
   function syncFormDraggableCard() {
-    const itemData = collectFormData();
+    const itemData = state.selectedItem || collectFormData();
     const cardTitle = document.getElementById('decisionCardTitle');
     const cardIcon = document.getElementById('decisionCardIcon');
     const cardSevTag = document.getElementById('decisionCardSevTag');
@@ -542,8 +655,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const cardCatText = document.getElementById('decisionCardCatText');
     const cardPriceText = document.getElementById('decisionCardPriceText');
 
-    if (cardTitle) cardTitle.textContent = itemData.itemTitle;
-    if (cardIcon) cardIcon.textContent = itemData.icon;
+    if (cardTitle) cardTitle.textContent = itemData.itemTitle || itemData.name;
+    if (cardIcon) cardIcon.textContent = itemData.icon || '📦';
 
     if (cardSevTag) {
       cardSevTag.className = `severity-mini-tag severity-${itemData.damageSeverity}`;
@@ -567,13 +680,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function handleManualFormUpdate() {
+    const updated = collectFormData();
+    syncFormDraggableCard();
+    const action = updated.damageSeverity === 'critical' ? 'replace' : 'repair';
+    const res = engine.evaluateDrop(updated, action);
+    state.currentAssessment = res;
+    renderResultPanel(res);
+    renderUpcycling();
+  }
+
   if (form) {
-    form.addEventListener('input', () => {
-      syncFormDraggableCard();
-    });
-    form.addEventListener('change', () => {
-      syncFormDraggableCard();
-    });
+    form.addEventListener('input', () => handleManualFormUpdate());
+    form.addEventListener('change', () => handleManualFormUpdate());
   }
 
   // ==========================================================================
@@ -612,7 +731,9 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         card.addEventListener('click', () => {
-          loadPresetIntoForm(preset, true);
+          playClick();
+          selectItem(preset, preset.expectedVerdict.toLowerCase());
+          showToast(`Loaded preset "${preset.name}". Drag to an Action Zone to re-evaluate!`, 'info');
         });
 
         setupDraggableItem(card, preset);
@@ -622,7 +743,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (heroChips) {
       heroChips.innerHTML = '';
-      data.presets.slice(0, 6).forEach((preset, idx) => {
+      data.presets.slice(0, 6).forEach((preset) => {
         const chip = document.createElement('button');
         chip.type = 'button';
         chip.className = `preset-chip ${preset.id === heroActivePreset.id ? 'active' : ''}`;
@@ -659,7 +780,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     title.textContent = heroActivePreset.name;
     summary.textContent = heroActivePreset.notes;
-    savings.textContent = formatMoney(heroActivePreset.originalCostUSD - heroActivePreset.repairCostUSD);
+    savings.textContent = formatMoney(heroActivePreset.originalCost - heroActivePreset.repairCost);
     
     const cat = data.categories.find(c => c.id === heroActivePreset.category);
     carbon.textContent = `${cat ? cat.co2ReplacementKg : 35} kg CO₂`;
@@ -668,54 +789,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const heroLoadIntoEngineBtn = document.getElementById('heroLoadIntoEngineBtn');
   if (heroLoadIntoEngineBtn) {
     heroLoadIntoEngineBtn.addEventListener('click', () => {
-      loadPresetIntoForm(heroActivePreset, false);
-      executeDropEvaluation(heroActivePreset, heroActivePreset.expectedVerdict.toLowerCase());
+      playClick();
+      selectItem(heroActivePreset, heroActivePreset.expectedVerdict.toLowerCase());
       document.getElementById('engine').scrollIntoView({ behavior: 'smooth' });
     });
   }
 
-  function loadPresetIntoForm(preset, evaluateImmediately = false) {
-    categorySelect.value = preset.category;
-    state.selectedScopeCategory = preset.category;
-    populateMaterialsForCategory(preset.category);
-
-    setTimeout(() => {
-      materialSelect.value = preset.material;
-      document.getElementById('itemTitle').value = preset.itemTitle || preset.name;
-      document.getElementById('itemAge').value = preset.ageYears;
-      document.getElementById('damageDetails').value = preset.damageDetails;
-      document.getElementById('partsAvailability').value = preset.partsAvailability;
-      document.getElementById('userSkill').value = preset.userSkill;
-
-      state.baseOriginalUSD = preset.originalCostUSD;
-      state.baseRepairUSD = preset.repairCostUSD;
-
-      const cur = data.currencies[state.currency] || data.currencies.USD;
-      document.getElementById('originalCost').value = Math.round(preset.originalCostUSD * cur.rate);
-      document.getElementById('repairCost').value = Math.round(preset.repairCostUSD * cur.rate);
-
-      const radio = document.querySelector(`input[name="damageSeverity"][value="${preset.damageSeverity}"]`);
-      if (radio) {
-        radio.checked = true;
-        document.querySelectorAll('input[name="damageSeverity"]').forEach(r => {
-          r.closest('.radio-card').classList.remove('selected');
-        });
-        radio.closest('.radio-card').classList.add('selected');
-      }
-
-      syncFormDraggableCard();
-      highlightActiveScopeCard(preset.category);
-
-      if (evaluateImmediately) {
-        playClick();
-        executeDropEvaluation(preset, preset.expectedVerdict.toLowerCase());
-        showToast(`Loaded preset "${preset.name}". Drag to an Action Zone to re-evaluate!`, 'info');
-      }
-    }, 40);
-  }
-
   // ==========================================================================
-  // 9. DRAG-AND-DROP PROTOCOL CONTROLLER
+  // 9. DRAG-AND-DROP PROTOCOL CONTROLLER (Action Zones & Drops)
   // ==========================================================================
   function setupDraggableItem(element, itemDataGetter) {
     if (!element) return;
@@ -730,7 +811,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.dataTransfer.setData('text/plain', JSON.stringify(itemData));
         e.dataTransfer.setData('application/json', JSON.stringify(itemData));
       } catch (err) {
-        // Fallback already stored in state.activeDraggedItem
+        // Fallback stored in state.activeDraggedItem
       }
 
       element.classList.add('is-dragging');
@@ -760,7 +841,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const formDraggableCard = document.getElementById('formDraggableCard');
   if (formDraggableCard) {
-    setupDraggableItem(formDraggableCard, () => collectFormData());
+    setupDraggableItem(formDraggableCard, () => state.selectedItem || collectFormData());
   }
 
   const resRedragPill = document.getElementById('resRedragPill');
@@ -768,17 +849,19 @@ document.addEventListener('DOMContentLoaded', () => {
     setupDraggableItem(resRedragPill, () => {
       if (state.currentAssessment) {
         return {
+          id: state.currentAssessment.id,
+          name: state.currentAssessment.itemTitle,
+          itemTitle: state.currentAssessment.itemTitle,
           category: state.currentAssessment.category.id,
           material: state.currentAssessment.materialInfo ? state.currentAssessment.materialInfo.id : 'standard',
-          itemTitle: state.currentAssessment.itemTitle,
           damageSeverity: state.currentAssessment.damageSeverity,
           damageDetails: state.currentAssessment.damageDetails,
-          originalCostUSD: state.currentAssessment.costs.originalCost,
-          repairCostUSD: state.currentAssessment.costs.repairCost,
+          originalCost: state.currentAssessment.costs.originalCost,
+          repairCost: state.currentAssessment.costs.repairCost,
           icon: state.currentAssessment.category.icon
         };
       }
-      return collectFormData();
+      return state.selectedItem || collectFormData();
     });
   }
 
@@ -833,10 +916,11 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
         if (!droppedItem) {
-          droppedItem = collectFormData();
+          droppedItem = state.selectedItem || collectFormData();
         }
 
-        executeDropEvaluation(droppedItem, actionName);
+        // Synchronize and evaluate immediately
+        selectItem(droppedItem, actionName);
       });
 
       // Click / Tap Fallback
@@ -844,7 +928,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (state.selectedItemForTap) {
           zone.classList.add('drop-success-flash');
           setTimeout(() => zone.classList.remove('drop-success-flash'), 900);
-          executeDropEvaluation(state.selectedItemForTap, actionName);
+          selectItem(state.selectedItemForTap, actionName);
           state.selectedItemForTap = null;
           document.querySelectorAll('.is-tap-selected').forEach(el => el.classList.remove('is-tap-selected'));
         }
@@ -857,7 +941,6 @@ document.addEventListener('DOMContentLoaded', () => {
     state.currentAssessment = result;
 
     renderResultPanel(result);
-    updateRepurposingContextBanner(result);
 
     if (result.isVeto) {
       playVetoBuzzer();
@@ -865,7 +948,7 @@ document.addEventListener('DOMContentLoaded', () => {
       playSuccessChime();
     }
 
-    const itemName = result.itemTitle || 'Item';
+    const itemName = result.itemTitle || item.name || 'Item';
     showToast(`Evaluated "${itemName}" for ${targetAction.toUpperCase()}!`, result.isVeto ? 'warning' : 'success');
 
     if (compactShowResultBtn && engineLayoutGrid && window.innerWidth <= 1024) {
@@ -874,31 +957,24 @@ document.addEventListener('DOMContentLoaded', () => {
       engineLayoutGrid.classList.remove('show-form-only');
       engineLayoutGrid.classList.add('show-result-only');
     }
-
-    const resultPanel = document.getElementById('resultPanel');
-    if (resultPanel) {
-      const rect = resultPanel.getBoundingClientRect();
-      if (rect.top < 0 || rect.bottom > window.innerHeight) {
-        resultPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }
   }
 
   // ==========================================================================
-  // 10. Render Recommendation Result Panel
+  // 10. Render Recommendation Result Panel (with Clean INR Estimates)
   // ==========================================================================
   function renderResultPanel(res) {
     const resultPanel = document.getElementById('resultPanel');
-    if (!resultPanel) return;
+    if (!resultPanel || !res) return;
 
     const resItemTitle = document.getElementById('resItemTitle');
     const resCategoryPill = document.getElementById('resCategoryPill');
     const resTimestamp = document.getElementById('resTimestamp');
 
-    if (resItemTitle) resItemTitle.textContent = res.itemTitle;
+    if (resItemTitle) resItemTitle.textContent = res.itemTitle || (state.selectedItem ? state.selectedItem.name : 'Object');
     if (resCategoryPill) {
-      const matName = res.materialInfo ? res.materialInfo.name : 'Standard';
-      resCategoryPill.textContent = `${res.category.name} • ${matName}`;
+      const catName = (res.category && res.category.name) || res.categoryName || (state.selectedItem ? state.selectedItem.category : 'Object');
+      const matName = (res.materialInfo && res.materialInfo.name) || res.materialName || 'Standard';
+      resCategoryPill.textContent = `${catName} • ${matName}`;
     }
     if (resTimestamp) {
       resTimestamp.textContent = `Evaluated at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
@@ -961,7 +1037,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (resReuseScore) resReuseScore.textContent = `${res.reuseScore}%`;
     if (resReuseBar) resReuseBar.style.width = `${res.reuseScore}%`;
 
-    // Cost Breakdown
+    // Cost Breakdown in Pure INR
     const savingsHighlight = document.getElementById('resSavingsHighlight');
     if (savingsHighlight) {
       if (res.verdict === 'REPLACE') {
@@ -996,22 +1072,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const resWasteVal = document.getElementById('resWasteVal');
     const resWaterVal = document.getElementById('resWaterVal');
 
-    if (resCo2Val) resCo2Val.textContent = `${res.impact.co2AvoidedKg} kg`;
-    if (resWasteVal) resWasteVal.textContent = `${res.impact.wasteDivertedKg} kg`;
-    if (resWaterVal) resWaterVal.textContent = `${res.impact.waterLitersSaved.toLocaleString()} L`;
+    const co2Val = res.impact.co2eAvoidedKg || res.impact.co2AvoidedKg || 0;
+    const wasteVal = res.impact.wasteDivertedKg || 0;
+    const waterVal = res.impact.waterConservedL || res.impact.waterLitersSaved || 0;
+
+    if (resCo2Val) resCo2Val.textContent = `${co2Val} kg`;
+    if (resWasteVal) resWasteVal.textContent = `${wasteVal} kg`;
+    if (resWaterVal) resWaterVal.textContent = `${waterVal.toLocaleString()} L`;
 
     // Roadmap actions
     const resActionMode = document.getElementById('resActionMode');
     const stepsList = document.getElementById('resActionSteps');
     const toolsNote = document.getElementById('resToolsNote');
 
+    const plan = res.actionPlan || {};
+    const mode = plan.mode || 'Recommended Pathway';
+    const badge = plan.difficultyBadge || 'Moderate';
+    const steps = plan.keySteps || plan.steps || [];
+    const tools = plan.toolsNeeded || plan.toolsNote || [];
+    const toolsStr = Array.isArray(tools) ? tools.join(', ') : tools;
+
     if (resActionMode) {
-      resActionMode.textContent = `Recommended: ${res.actionPlan.mode} (${res.actionPlan.difficultyBadge})`;
+      resActionMode.textContent = `Recommended: ${mode} (${badge})`;
     }
 
     if (stepsList) {
       stepsList.innerHTML = '';
-      res.actionPlan.keySteps.forEach(step => {
+      steps.forEach(step => {
         const li = document.createElement('li');
         li.textContent = step;
         stepsList.appendChild(li);
@@ -1019,7 +1106,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (toolsNote) {
-      toolsNote.innerHTML = `<strong>Tools:</strong> ${res.actionPlan.toolsNeeded.join(', ')}`;
+      toolsNote.innerHTML = `<strong>Tools:</strong> ${toolsStr}`;
     }
 
     // Re-drag pill inside result card
@@ -1030,7 +1117,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================================================
-  // 11. UNIVERSAL SCOPE SECTION CONTROLLER (FIXED & FULLY FUNCTIONAL)
+  // 11. UNIVERSAL SCOPE SECTION CONTROLLER
   // ==========================================================================
   function highlightActiveScopeCard(categoryId) {
     document.querySelectorAll('.category-card').forEach(card => {
@@ -1103,7 +1190,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </button>
       `;
 
-      // 1. Subcategory Chips click listener (e.g. Solid State Drive (SSD), Smartphone, Chair)
+      // 1. Subcategory Chips click listener
       card.querySelectorAll('.cat-sub-item-chip').forEach(chip => {
         chip.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -1114,7 +1201,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       });
 
-      // 2. "Assess a [Category] Object →" Button listener
+      // 2. Assess button listener
       const loadBtn = card.querySelector(`[data-load-cat="${cat.id}"]`);
       if (loadBtn) {
         loadBtn.addEventListener('click', (e) => {
@@ -1144,48 +1231,47 @@ document.addEventListener('DOMContentLoaded', () => {
     state.selectedScopeCategory = categoryId;
     state.activeSubcategory = subcategoryName;
 
-    // 1. Visibly highlight card & chips in Universal Scope
-    highlightActiveScopeCard(categoryId);
-    document.querySelectorAll('.cat-sub-item-chip').forEach(ch => {
-      ch.classList.toggle('is-active', ch.getAttribute('data-sub-name') === subcategoryName);
-    });
-
-    // 2. Set form selectors
-    categorySelect.value = categoryId;
-    populateMaterialsForCategory(categoryId);
-
-    // 3. Check if matching preset exists (e.g. SSD, chair, shirt, boots)
+    // Check if matching preset exists
     const matchingPreset = data.presets.find(p => 
       p.itemTitle.toLowerCase().includes(subcategoryName.toLowerCase()) ||
       subcategoryName.toLowerCase().includes(p.name.toLowerCase()) ||
       (subcategoryName.includes('SSD') && p.id === 'ssd_drive')
     );
 
-    setTimeout(() => {
-      if (matchingPreset) {
-        loadPresetIntoForm(matchingPreset, false);
-      } else {
-        document.getElementById('itemTitle').value = subcategoryName;
-        const cur = data.currencies[state.currency] || data.currencies.USD;
-        // Sensible category-based defaults
-        const defaultOrigUSD = categoryId === 'electronics' ? 120 : categoryId === 'mechanical' ? 180 : 75;
-        const defaultRepairUSD = Math.round(defaultOrigUSD * 0.2);
-        state.baseOriginalUSD = defaultOrigUSD;
-        state.baseRepairUSD = defaultRepairUSD;
-        document.getElementById('originalCost').value = Math.round(defaultOrigUSD * cur.rate);
-        document.getElementById('repairCost').value = Math.round(defaultRepairUSD * cur.rate);
-      }
+    if (matchingPreset) {
+      selectItem(matchingPreset, matchingPreset.expectedVerdict.toLowerCase());
+    } else {
+      // Look up distinct subcategory default
+      const subDef = (data.subcategoryDefaults && data.subcategoryDefaults[subcategoryName]) || {};
+      const catObj = data.categories.find(c => c.id === categoryId) || data.categories[0];
+      
+      const itemToSelect = {
+        name: subcategoryName,
+        itemTitle: subcategoryName,
+        category: categoryId,
+        material: subDef.material || (catObj.materials[0] ? catObj.materials[0].id : 'standard'),
+        ageYears: subDef.ageYears || 2,
+        damageSeverity: subDef.damageSeverity || 'minor',
+        damageDetails: subDef.damageDetails || `Observed routine wear on ${subcategoryName}. Ready for circular lifecycle evaluation.`,
+        partsAvailability: subDef.partsAvailability || 'available',
+        userSkill: subDef.userSkill || 'intermediate',
+        originalCost: subDef.originalCost || (categoryId === 'electronics' ? 8500 : categoryId === 'mechanical' ? 12000 : 4500),
+        repairCost: subDef.repairCost || Math.round((subDef.originalCost || 4500) * 0.2),
+        repurposeCost: subDef.repurposeCost || Math.round((subDef.originalCost || 4500) * 0.25),
+        reuseValue: subDef.reuseValue || Math.round((subDef.originalCost || 4500) * 0.6),
+        icon: subDef.icon || catObj.icon || '📦',
+        expectedVerdict: subDef.expectedVerdict || 'REPAIR'
+      };
 
-      syncFormDraggableCard();
+      selectItem(itemToSelect, itemToSelect.expectedVerdict.toLowerCase());
+    }
 
-      // 4. Execute evaluation & update Recommendation Result Panel immediately
-      const configuredItem = collectFormData();
-      executeDropEvaluation(configuredItem, configuredItem.damageSeverity === 'critical' ? 'replace' : 'repair');
-
-      // 5. Scroll smoothly to engine
-      document.getElementById('engine').scrollIntoView({ behavior: 'smooth' });
-      showToast(`Selected "${subcategoryName}". Circular verdict evaluated!`, 'success');
-    }, 40);
+    // Scroll smoothly to engine
+    const engineEl = document.getElementById('engine');
+    if (engineEl) {
+      engineEl.scrollIntoView({ behavior: 'smooth' });
+    }
+    showToast(`Selected "${subcategoryName}". Circular verdict evaluated!`, 'success');
   }
 
   // Universal Scope filter tabs
@@ -1201,116 +1287,76 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ==========================================================================
-  // 12. CREATIVE REPURPOSING IDEAS STUDIO (DIY FOCUSED)
+  // 12. SIMPLIFIED CREATIVE REPURPOSING IDEAS STUDIO (MAX 3 COMPACT CARDS)
   // ==========================================================================
-  function updateRepurposingContextBanner(res) {
-    const banner = document.getElementById('repurposeContextBanner');
-    const title = document.getElementById('repurposeContextTitle');
-    const desc = document.getElementById('repurposeContextDesc');
-    if (!banner || !res) return;
-
-    banner.style.display = 'flex';
-    title.textContent = `✨ Tailored Repurposing Matches for: ${res.itemTitle}`;
-    desc.textContent = `Showing creative DIY transformations suited for ${res.category.name} (${res.damageSeverity} wear).`;
-  }
-
   function renderUpcycling() {
     const grid = document.getElementById('upcyclingGrid');
+    const contextItemName = document.getElementById('repurposeContextItemName');
     if (!grid) return;
+
+    // Update active context header
+    const currentItem = state.selectedItem;
+    const currentName = currentItem ? (currentItem.itemTitle || currentItem.name) : 'Solid Oak Dining Chair';
+    const currentCat = currentItem ? currentItem.category : 'furniture';
+    const currentMat = currentItem ? (currentItem.material || '').toLowerCase() : '';
+
+    if (contextItemName) {
+      contextItemName.textContent = currentName;
+    }
 
     grid.innerHTML = '';
 
-    const term = state.repurposeSearch.toLowerCase().trim();
-    const catFilter = state.repurposeCategory;
+    // Score and select exactly 3 most relevant projects from data.upcycleProjects
+    let projects = [...data.upcycleProjects];
+    
+    // Sort so items matching current category and material keywords come first
+    projects.sort((a, b) => {
+      let scoreA = 0;
+      let scoreB = 0;
 
-    const filtered = data.upcycleProjects.filter(proj => {
-      const matchesCat = catFilter === 'all' || proj.category === catFilter;
-      const matchesTerm = !term || 
-        proj.title.toLowerCase().includes(term) ||
-        proj.sourceObject.toLowerCase().includes(term) ||
-        proj.summary.toLowerCase().includes(term) ||
-        proj.categoryName.toLowerCase().includes(term) ||
-        proj.materialsNeeded.some(m => m.toLowerCase().includes(term));
-      return matchesCat && matchesTerm;
+      if (a.category === currentCat) scoreA += 20;
+      if (b.category === currentCat) scoreB += 20;
+
+      const nameLower = currentName.toLowerCase();
+      if (nameLower.includes(a.sourceObject.toLowerCase()) || a.sourceObject.toLowerCase().includes(nameLower)) scoreA += 15;
+      if (nameLower.includes(b.sourceObject.toLowerCase()) || b.sourceObject.toLowerCase().includes(nameLower)) scoreB += 15;
+
+      if (currentMat && a.title.toLowerCase().includes(currentMat)) scoreA += 10;
+      if (currentMat && b.title.toLowerCase().includes(currentMat)) scoreB += 10;
+
+      return scoreB - scoreA;
     });
 
-    if (filtered.length === 0) {
-      grid.innerHTML = `
-        <div class="repurpose-empty-state">
-          <div class="empty-icon">✂️</div>
-          <h4>No Repurposing Ideas Found for "${state.repurposeSearch}"</h4>
-          <p>Try searching for another material (e.g. "t-shirt", "drawer", "SSD", "glass", "denim") or reset the filter.</p>
-          <button type="button" class="btn btn-secondary btn-sm" id="emptyResetFilterBtn" style="margin-top: 1rem;">
-            Show All Ideas
-          </button>
-        </div>
-      `;
-      const resetBtn = document.getElementById('emptyResetFilterBtn');
-      if (resetBtn) {
-        resetBtn.addEventListener('click', () => {
-          state.repurposeCategory = 'all';
-          state.repurposeSearch = '';
-          const searchInput = document.getElementById('repurposeSearchInput');
-          if (searchInput) searchInput.value = '';
-          document.querySelectorAll('.repurpose-filter-pill').forEach(p => p.classList.toggle('active', p.getAttribute('data-repurpose-cat') === 'all'));
-          renderUpcycling();
-        });
-      }
-      return;
-    }
+    // Display maximum of 3 useful, relevant ideas
+    const topThree = projects.slice(0, 3);
 
-    filtered.forEach(proj => {
+    topThree.forEach(proj => {
       const card = document.createElement('div');
-      card.className = 'upcycle-card';
+      card.className = 'upcycle-card compact-card';
+
+      const costSavingsINR = proj.costSavingsINR || Math.round((proj.costSavingsUSD || 25) * 80);
 
       card.innerHTML = `
-        <div class="upcycle-preview-visual">
-          <span class="visual-icon">${proj.icon || '✂️'}</span>
-          <span class="upcycle-difficulty-pill">${proj.difficulty} • ${proj.timeRequired}</span>
+        <div class="upcycle-card-header">
+          <span class="upcycle-icon">${proj.icon || '✂️'}</span>
+          <span class="upcycle-cat-badge">${proj.difficulty} • ${proj.timeRequired}</span>
         </div>
-        <div class="upcycle-body">
-          <div class="upcycle-category-tag">${proj.categoryName}</div>
-          <h3 class="upcycle-title">${proj.title}</h3>
-          <div class="upcycle-origin">Repurposed from: <strong>${proj.sourceObject}</strong></div>
-          <p class="upcycle-desc">${proj.summary}</p>
-          
-          <div class="upcycle-materials-box">
-            <strong>Required:</strong> ${proj.materialsNeeded.join(', ')}
-          </div>
-
-          <div class="upcycle-steps-preview">
-            <h6>Step-by-Step Preview (${proj.steps.length} Steps):</h6>
-            <ol>
-              ${proj.steps.slice(0, 3).map(s => `<li>${s}</li>`).join('')}
-              ${proj.steps.length > 3 ? `<li style="list-style: none; color: var(--primary); font-weight: 600;">+ ${proj.steps.length - 3} more steps in full guide...</li>` : ''}
-            </ol>
-          </div>
-
-          ${proj.safetyTip ? `
-            <div class="repurpose-safety-box">
-              <strong>⚠️ Safety Note:</strong> ${proj.safetyTip}
-            </div>
-          ` : ''}
-
-          <div class="upcycle-stats-row">
-            <div>
-              <span style="color: var(--text-dim);">Diverts:</span>
-              <strong style="color: var(--reuse);">${proj.co2SavedKg} kg CO₂</strong>
-            </div>
-            <div>
-              <span style="color: var(--text-dim);">Est. Saved:</span>
-              <strong style="color: var(--primary);">${formatMoney(proj.costSavingsUSD)}</strong>
-            </div>
-          </div>
-
-          <div class="upcycle-actions-row">
-            <button type="button" class="btn btn-secondary btn-sm" data-view-guide="${proj.id}">
-              📖 View Full DIY Guide
-            </button>
-            <button type="button" class="btn btn-primary btn-sm" data-try-material="${proj.id}">
-              Evaluate in Engine →
-            </button>
-          </div>
+        <h4 class="upcycle-title">${proj.title}</h4>
+        <div class="upcycle-origin" style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 0.5rem;">
+          Repurposed from: <strong>${proj.sourceObject}</strong>
+        </div>
+        <p class="upcycle-summary">${proj.summary}</p>
+        <div class="upcycle-metrics-bar">
+          <span class="upcycle-metric-tag">CO₂ Diverted: <strong>${proj.co2SavedKg} kg</strong></span>
+          <span class="upcycle-metric-tag">Est. Saved: <strong>${formatMoney(costSavingsINR)}</strong></span>
+        </div>
+        <div class="upcycle-actions-row">
+          <button type="button" class="btn btn-secondary btn-sm" data-view-guide="${proj.id}">
+            📖 DIY Guide
+          </button>
+          <button type="button" class="btn btn-primary btn-sm" data-try-material="${proj.id}">
+            Evaluate in Engine →
+          </button>
         </div>
       `;
 
@@ -1328,14 +1374,25 @@ document.addEventListener('DOMContentLoaded', () => {
       if (tryMatBtn) {
         tryMatBtn.addEventListener('click', () => {
           playClick();
-          categorySelect.value = proj.category;
-          populateMaterialsForCategory(proj.category);
-          document.getElementById('itemTitle').value = proj.sourceObject.split(' (')[0].split(' with')[0];
-          syncFormDraggableCard();
-          const configured = collectFormData();
-          executeDropEvaluation(configured, 'repurpose');
+          const cleanName = proj.sourceObject.split(' (')[0].split(' with')[0];
+          const matchedItem = {
+            id: proj.id,
+            name: cleanName,
+            itemTitle: cleanName,
+            category: proj.category,
+            material: 'standard',
+            damageSeverity: 'moderate',
+            damageDetails: `Converted to ${proj.title}. Diverts ${proj.co2SavedKg} kg CO₂.`,
+            originalCost: costSavingsINR * 2,
+            repairCost: Math.round(costSavingsINR * 0.3),
+            repurposeCost: Math.round(costSavingsINR * 0.4),
+            reuseValue: costSavingsINR,
+            icon: proj.icon || '✂️',
+            expectedVerdict: 'REUSE'
+          };
+          selectItem(matchedItem, 'repurpose');
           document.getElementById('engine').scrollIntoView({ behavior: 'smooth' });
-          showToast(`Loaded "${proj.sourceObject}" for repurposing assessment!`, 'info');
+          showToast(`Loaded "${cleanName}" for creative repurposing!`, 'info');
         });
       }
 
@@ -1355,6 +1412,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (modalTitle) modalTitle.textContent = proj.title;
     if (modalSubtitle) modalSubtitle.textContent = `Repurposed from: ${proj.sourceObject} • ${proj.difficulty} (${proj.timeRequired})`;
 
+    const costSavingsINR = proj.costSavingsINR || Math.round((proj.costSavingsUSD || 25) * 80);
+
     if (modalBody) {
       modalBody.innerHTML = `
         <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem 1.25rem; margin-bottom: 1.25rem;">
@@ -1369,7 +1428,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
           <div style="background: var(--bg-input); padding: 0.85rem; border-radius: var(--radius-sm);">
             <span style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase;">Average Money Saved</span>
-            <div style="font-size: 1.2rem; font-weight: 800; color: var(--primary);">${formatMoney(proj.costSavingsUSD)}</div>
+            <div style="font-size: 1.2rem; font-weight: 800; color: var(--primary);">${formatMoney(costSavingsINR)}</div>
           </div>
         </div>
 
@@ -1398,11 +1457,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (loadEngineBtn) {
       loadEngineBtn.onclick = () => {
         closeModal('repurposeGuideModal');
-        categorySelect.value = proj.category;
-        populateMaterialsForCategory(proj.category);
-        document.getElementById('itemTitle').value = proj.sourceObject.split(' (')[0];
-        syncFormDraggableCard();
-        executeDropEvaluation(collectFormData(), 'repurpose');
+        const cleanName = proj.sourceObject.split(' (')[0];
+        const itemObj = {
+          id: proj.id,
+          name: cleanName,
+          itemTitle: cleanName,
+          category: proj.category,
+          material: 'standard',
+          damageSeverity: 'moderate',
+          damageDetails: `Converted to ${proj.title}`,
+          originalCost: costSavingsINR * 2,
+          repairCost: Math.round(costSavingsINR * 0.3),
+          repurposeCost: Math.round(costSavingsINR * 0.4),
+          reuseValue: costSavingsINR,
+          icon: proj.icon || '✂️',
+          expectedVerdict: 'REUSE'
+        };
+        selectItem(itemObj, 'repurpose');
         document.getElementById('engine').scrollIntoView({ behavior: 'smooth' });
       };
     }
@@ -1410,41 +1481,8 @@ document.addEventListener('DOMContentLoaded', () => {
     openModal('repurposeGuideModal');
   }
 
-  // Repurposing Category Filter Pills
-  document.querySelectorAll('.repurpose-filter-pill').forEach(btn => {
-    btn.addEventListener('click', () => {
-      playClick();
-      document.querySelectorAll('.repurpose-filter-pill').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      state.repurposeCategory = btn.getAttribute('data-repurpose-cat');
-      renderUpcycling();
-    });
-  });
-
-  // Repurposing Search Input
-  const repurposeSearchInput = document.getElementById('repurposeSearchInput');
-  if (repurposeSearchInput) {
-    repurposeSearchInput.addEventListener('input', (e) => {
-      state.repurposeSearch = e.target.value;
-      renderUpcycling();
-    });
-  }
-
-  // Repurposing Reset Filter Button in Context Banner
-  const repurposeResetFilterBtn = document.getElementById('repurposeResetFilterBtn');
-  if (repurposeResetFilterBtn) {
-    repurposeResetFilterBtn.addEventListener('click', () => {
-      playClick();
-      state.repurposeCategory = 'all';
-      state.repurposeSearch = '';
-      if (repurposeSearchInput) repurposeSearchInput.value = '';
-      document.querySelectorAll('.repurpose-filter-pill').forEach(p => p.classList.toggle('active', p.getAttribute('data-repurpose-cat') === 'all'));
-      renderUpcycling();
-    });
-  }
-
   // ==========================================================================
-  // 13. Community Impact Simulator
+  // 13. Community Impact Simulator (Calculated in Pure INR)
   // ==========================================================================
   const simSlider = document.getElementById('simSlider');
   const simCountDisplay = document.getElementById('simCountDisplay');
@@ -1452,9 +1490,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateSimulator() {
     if (!simSlider) return;
     const count = parseInt(simSlider.value, 10);
-    if (simCountDisplay) simCountDisplay.textContent = count.toLocaleString();
+    if (simCountDisplay) simCountDisplay.textContent = count.toLocaleString('en-IN');
 
-    const totalUSD = count * 114;
+    // Illustrative baseline: Average repair/reuse savings ~₹3,200 per item
+    const totalINR = count * 3200;
     const totalCO2Kg = count * 38;
     const totalWasteKg = count * 9;
     const trees = Math.round(totalCO2Kg / 21);
@@ -1464,10 +1503,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const simWasteVal = document.getElementById('simWasteVal');
     const simTreesVal = document.getElementById('simTreesVal');
 
-    if (simMoneyVal) simMoneyVal.textContent = formatMoney(totalUSD);
+    if (simMoneyVal) simMoneyVal.textContent = formatMoney(totalINR);
     if (simCo2Val) simCo2Val.textContent = `${(totalCO2Kg / 1000).toFixed(1)} Tons`;
-    if (simWasteVal) simWasteVal.textContent = `${totalWasteKg.toLocaleString()} kg`;
-    if (simTreesVal) simTreesVal.textContent = `${trees.toLocaleString()} Trees`;
+    if (simWasteVal) simWasteVal.textContent = `${totalWasteKg.toLocaleString('en-IN')} kg`;
+    if (simTreesVal) simTreesVal.textContent = `${trees.toLocaleString('en-IN')} Trees`;
   }
 
   if (simSlider) {
@@ -1633,11 +1672,14 @@ document.addEventListener('DOMContentLoaded', () => {
   if (printReportBtn) {
     printReportBtn.addEventListener('click', () => {
       if (!state.currentAssessment) {
-        state.currentAssessment = engine.assessItem(collectFormData());
+        state.currentAssessment = engine.evaluateDrop(state.selectedItem || collectFormData(), 'repair');
       }
       const res = state.currentAssessment;
 
       if (reportModalBody) {
+        const co2Val = res.impact.co2eAvoidedKg || res.impact.co2AvoidedKg || 0;
+        const wasteVal = res.impact.wasteDivertedKg || 0;
+
         reportModalBody.innerHTML = `
           <div style="border-bottom: 2px solid var(--primary); padding-bottom: 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
             <div style="display: flex; align-items: center; gap: 0.75rem;">
@@ -1667,16 +1709,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; text-align: center;">
             <div style="background: var(--bg-input); padding: 1rem; border-radius: var(--radius-sm);">
-              <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim);">Financial Savings</div>
+              <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim);">Financial Savings (Illustrative)</div>
               <div style="font-size: 1.35rem; font-weight: 800; color: var(--primary);">${formatMoney(res.costs.moneySaved)}</div>
             </div>
             <div style="background: var(--bg-input); padding: 1rem; border-radius: var(--radius-sm);">
               <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim);">CO₂e Diverted</div>
-              <div style="font-size: 1.35rem; font-weight: 800;">${res.impact.co2AvoidedKg} kg</div>
+              <div style="font-size: 1.35rem; font-weight: 800;">${co2Val} kg</div>
             </div>
             <div style="background: var(--bg-input); padding: 1rem; border-radius: var(--radius-sm);">
               <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim);">Landfill Diverted</div>
-              <div style="font-size: 1.35rem; font-weight: 800;">${res.impact.wasteDivertedKg} kg</div>
+              <div style="font-size: 1.35rem; font-weight: 800;">${wasteVal} kg</div>
             </div>
           </div>
 
@@ -1688,7 +1730,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
 
           <div style="border-top: 1px dashed var(--border); padding-top: 1rem; font-size: 0.75rem; color: var(--text-dim);">
-            * Evaluation computed via REFIX Circularity Engine heuristics based on lifecycle benchmarks. Currency displayed in ${data.currencies[state.currency].name}.
+            * Evaluation computed via REFIX Circularity Engine heuristics based on lifecycle benchmarks. All figures are clearly identified illustrative estimates displayed in Indian Rupee (₹).
           </div>
         `;
       }
@@ -1847,7 +1889,9 @@ document.addEventListener('DOMContentLoaded', () => {
         damageSeverity: 'minor',
         defectName: 'Surface Wear & Joint Strain Detected',
         confidence: '90%',
-        damageDetails: 'Optical scan localized surface wear and connector strain.'
+        damageDetails: 'Optical scan localized surface wear and connector strain.',
+        originalCost: 4500,
+        repairCost: 450
       };
 
       analyzeImage(dataUrl, cameraMeta, false);
@@ -1910,11 +1954,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const uploadMeta = {
         itemTitle: file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ') || 'Uploaded Object',
         category: categorySelect.value || 'furniture',
-        material: materialSelect.value || 'solid_wood',
+        material: materialSelect.value || 'hardwood',
         damageSeverity: 'moderate',
         defectName: 'Localized Structural & Material Wear',
         confidence: '92%',
-        damageDetails: `Visual inspection of "${file.name}" reveals localized wear ready for circular evaluation.`
+        damageDetails: `Visual inspection of "${file.name}" reveals localized wear ready for circular evaluation.`,
+        originalCost: 4500,
+        repairCost: 650
       };
       analyzeImage(dataUrl, uploadMeta, false);
     };
@@ -2005,44 +2051,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const meta = activeScanResult.meta;
       state.scannedPhoto = activeScanResult;
 
-      if (meta.category) {
-        categorySelect.value = meta.category;
-        state.selectedScopeCategory = meta.category;
-        populateMaterialsForCategory(meta.category);
-      }
+      // Single source of truth update
+      selectItem(meta, meta.damageSeverity === 'critical' ? 'replace' : 'repair');
 
-      setTimeout(() => {
-        if (meta.material) materialSelect.value = meta.material;
-        if (meta.itemTitle) document.getElementById('itemTitle').value = meta.itemTitle;
-        if (meta.damageDetails) document.getElementById('damageDetails').value = meta.damageDetails;
-        if (meta.ageYears) document.getElementById('itemAge').value = meta.ageYears;
+      closeModal('cameraScannerModal');
+      stopCamera();
 
-        if (meta.originalCost) {
-          state.baseOriginalUSD = meta.originalCost;
-          state.baseRepairUSD = meta.repairCost || Math.round(meta.originalCost * 0.2);
-          const cur = data.currencies[state.currency] || data.currencies.USD;
-          document.getElementById('originalCost').value = Math.round(state.baseOriginalUSD * cur.rate);
-          document.getElementById('repairCost').value = Math.round(state.baseRepairUSD * cur.rate);
-        }
-
-        const radio = document.querySelector(`input[name="damageSeverity"][value="${meta.damageSeverity}"]`);
-        if (radio) {
-          radio.checked = true;
-          document.querySelectorAll('input[name="damageSeverity"]').forEach(r => {
-            r.closest('.radio-card').classList.remove('selected');
-          });
-          radio.closest('.radio-card').classList.add('selected');
-        }
-
-        syncFormDraggableCard();
-        closeModal('cameraScannerModal');
-        stopCamera();
-
-        const evaluatedItem = collectFormData();
-        executeDropEvaluation(evaluatedItem, meta.damageSeverity === 'critical' ? 'replace' : 'repair');
-        showToast('Photo inspection verified and applied to decision engine!', 'success');
-        document.getElementById('engine').scrollIntoView({ behavior: 'smooth' });
-      }, 50);
+      showToast('Photo inspection verified and applied to decision engine!', 'success');
+      document.getElementById('engine').scrollIntoView({ behavior: 'smooth' });
     });
   }
 
@@ -2062,15 +2078,13 @@ document.addEventListener('DOMContentLoaded', () => {
   populateCategoriesDropdown();
   renderPresets();
   renderSamplePhotos();
-  syncFormDraggableCard();
   setupActionZones();
   updateCurrencyLabels();
+  updateHeroSavingsStat();
   renderCategories('all');
-  renderUpcycling();
   updateSimulator();
   renderDirectory();
 
-  // Run initial evaluation for default Oak Dining Chair
-  const initialData = collectFormData();
-  executeDropEvaluation(initialData, 'repair');
+  // Load and evaluate initial Oak Dining Chair seamlessly
+  selectItem(initialDefaultItem, 'repair');
 });

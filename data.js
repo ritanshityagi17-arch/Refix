@@ -7,17 +7,13 @@
  */
 
 const REFIX_DATA = {
-  currencies: {
-    USD: { code: 'USD', symbol: '$', rate: 1.0, name: 'US Dollar', format: 'en-US', benchmark: '1.00 USD (Base)' },
-    EUR: { code: 'EUR', symbol: '€', rate: 0.92, name: 'Euro', format: 'de-DE', benchmark: '1 USD = 0.92 EUR (ECB Benchmark)' },
-    GBP: { code: 'GBP', symbol: '£', rate: 0.79, name: 'British Pound', format: 'en-GB', benchmark: '1 USD = 0.79 GBP (BoE Benchmark)' },
-    INR: { code: 'INR', symbol: '₹', rate: 83.5, name: 'Indian Rupee', format: 'en-IN', benchmark: '1 USD = 83.50 INR (RBI Benchmark)' }
+  currency: {
+    code: 'INR',
+    symbol: '₹',
+    name: 'Indian Rupee',
+    format: 'en-IN'
   },
-  currencyMetadata: {
-    lastUpdated: 'Q4 2024 Global Central Bank Benchmarks',
-    baseCurrency: 'USD',
-    disclaimer: 'Currencies use verified Q4 2024 benchmark exchange ratios for realistic international cost comparisons without third-party API latency.'
-  },
+  costDisclaimer: 'All financial estimates, repair costs, and replacement values are illustrative estimates for circular decision guidance.',
 
   categories: [
     {
@@ -190,7 +186,7 @@ const REFIX_DATA = {
     }
   ],
 
-  // Ready-to-Evaluate Scenario Presets (Including SSD)
+  // Ready-to-Evaluate Scenario Presets (All in Indian Rupees ₹ - Illustrative Estimates)
   presets: [
     {
       id: 'chair_wood',
@@ -206,10 +202,12 @@ const REFIX_DATA = {
       damageDetails: 'Mortise and tenon joint on rear leg is loose and creaks. Wood is structurally sound.',
       partsAvailability: 'available',
       userSkill: 'intermediate',
-      originalCostUSD: 140,
-      repairCostUSD: 12,
+      originalCost: 4500,
+      repairCost: 450,
+      repurposeCost: 600,
+      reuseValue: 2800,
       expectedVerdict: 'REPAIR',
-      notes: 'Fixing loose mortise joint with PVA wood glue and clamping for 12h saves $128 vs replacement.'
+      notes: 'Fixing loose mortise joint with PVA wood glue and clamping for 12h saves ₹4,050 vs replacement.'
     },
     {
       id: 'ssd_drive',
@@ -225,10 +223,12 @@ const REFIX_DATA = {
       damageDetails: 'Enclosure USB-C port is mechanically loose and disconnects under cable movement. Flash memory NAND chips and controller operate without data corruption.',
       partsAvailability: 'available',
       userSkill: 'intermediate',
-      originalCostUSD: 95,
-      repairCostUSD: 18,
+      originalCost: 4200,
+      repairCost: 850,
+      repurposeCost: 500,
+      reuseValue: 2500,
       expectedVerdict: 'REPAIR',
-      notes: 'Transferring drive PCB into a modular $18 replacement enclosure or re-soldering the connector pin preserves all data and saves $77.'
+      notes: 'Transferring drive PCB into a modular ₹850 replacement enclosure or re-soldering the connector pin preserves all data and saves ₹3,350.'
     },
     {
       id: 'shirt_cotton',
@@ -244,8 +244,10 @@ const REFIX_DATA = {
       damageDetails: 'Torn underarm seam (5cm) and one missing cuff button. Fabric is clean and sturdy.',
       partsAvailability: 'available',
       userSkill: 'beginner',
-      originalCostUSD: 45,
-      repairCostUSD: 6,
+      originalCost: 1499,
+      repairCost: 150,
+      repurposeCost: 120,
+      reuseValue: 600,
       expectedVerdict: 'REPAIR',
       notes: 'Sewing seam and replacing missing button preserves 2,700 liters of water needed for new cotton.'
     },
@@ -263,8 +265,10 @@ const REFIX_DATA = {
       damageDetails: 'Loose spine cloth binding, slightly yellowed pages, intact readable text block.',
       partsAvailability: 'available',
       userSkill: 'beginner',
-      originalCostUSD: 30,
-      repairCostUSD: 5,
+      originalCost: 850,
+      repairCost: 120,
+      repurposeCost: 100,
+      reuseValue: 500,
       expectedVerdict: 'REUSE',
       notes: 'Re-glue spine cloth with pH-neutral starch paste or donate to community reading exchange.'
     },
@@ -282,8 +286,10 @@ const REFIX_DATA = {
       damageDetails: 'Worn fabric blowout at left knee; zipper, rivets, waistband, and pockets are fully intact.',
       partsAvailability: 'available',
       userSkill: 'beginner',
-      originalCostUSD: 85,
-      repairCostUSD: 8,
+      originalCost: 2799,
+      repairCost: 250,
+      repurposeCost: 200,
+      reuseValue: 1200,
       expectedVerdict: 'REPAIR',
       notes: 'Sashiko visible mending or inner iron-on patch adds character and extends life by 3+ years.'
     },
@@ -301,10 +307,12 @@ const REFIX_DATA = {
       damageDetails: 'Front exterior glass shattered; digitizer touch response, camera, battery, and logic board 100% functional.',
       partsAvailability: 'available',
       userSkill: 'intermediate',
-      originalCostUSD: 720,
-      repairCostUSD: 75,
+      originalCost: 24000,
+      repairCost: 3200,
+      repurposeCost: 1500,
+      reuseValue: 11000,
       expectedVerdict: 'REPAIR',
-      notes: 'Replacing display module with standard screwdrivers and suction cup saves $645 and 65kg CO₂e.'
+      notes: 'Replacing display module with standard screwdrivers and suction cup saves ₹20,800 and 65kg CO₂e.'
     },
     {
       id: 'pan_teflon',
@@ -320,8 +328,10 @@ const REFIX_DATA = {
       damageDetails: 'PTFE non-stick coating peeling and flaking into cooked food surface across cooking floor.',
       partsAvailability: 'none',
       userSkill: 'beginner',
-      originalCostUSD: 40,
-      repairCostUSD: 0,
+      originalCost: 1800,
+      repairCost: 0,
+      repurposeCost: 150,
+      reuseValue: 0,
       expectedVerdict: 'REPLACE',
       notes: '🚨 SAFETY VETO: Degraded PTFE releases toxic micro-compounds. Never DIY re-coat. Recycle bare aluminum and upgrade to cast iron or multi-ply stainless.'
     },
@@ -339,8 +349,10 @@ const REFIX_DATA = {
       damageDetails: 'Rear derailleur cable slack causes gear skipping under load; tires, frame, and brakes are solid.',
       partsAvailability: 'available',
       userSkill: 'intermediate',
-      originalCostUSD: 480,
-      repairCostUSD: 14,
+      originalCost: 12500,
+      repairCost: 650,
+      repurposeCost: 1200,
+      reuseValue: 7000,
       expectedVerdict: 'REPAIR',
       notes: 'Tightening cable tension screw and oiling links restores crisp shifting in under 15 minutes.'
     },
@@ -358,8 +370,10 @@ const REFIX_DATA = {
       damageDetails: 'Vibram rubber heel outsole worn down at angle; upper leather is supple and pristine.',
       partsAvailability: 'available',
       userSkill: 'hire_pro',
-      originalCostUSD: 240,
-      repairCostUSD: 45,
+      originalCost: 6500,
+      repairCost: 950,
+      repurposeCost: 450,
+      reuseValue: 3500,
       expectedVerdict: 'REPAIR',
       notes: 'Goodyear welt resoling by local cobbler restores waterproof traction for 5+ years of wear.'
     },
@@ -377,8 +391,10 @@ const REFIX_DATA = {
       damageDetails: 'Hairline fracture visible across internal EPS shock-absorbing foam after fall.',
       partsAvailability: 'none',
       userSkill: 'beginner',
-      originalCostUSD: 80,
-      repairCostUSD: 0,
+      originalCost: 2400,
+      repairCost: 0,
+      repurposeCost: 0,
+      reuseValue: 0,
       expectedVerdict: 'REPLACE',
       notes: '🚨 SAFETY VETO: Single-use EPS micro-cells are crushed. Gluing is fatal. Cut straps and replace new.'
     }
@@ -393,8 +409,8 @@ const REFIX_DATA = {
       category: 'electronics',
       material: 'modular_electronics',
       severity: 'minor',
-      originalCost: 95,
-      repairCost: 18,
+      originalCost: 4200,
+      repairCost: 850,
       tag: 'Electronics • SSD',
       svgThumb: `<svg viewBox="0 0 100 100" width="100%" height="100%"><rect width="100" height="100" fill="#1e293b"/><text x="50" y="55" font-size="42" text-anchor="middle" dominant-baseline="middle">💾</text></svg>`
     },
@@ -405,8 +421,8 @@ const REFIX_DATA = {
       category: 'furniture',
       material: 'solid_wood',
       severity: 'minor',
-      originalCost: 140,
-      repairCost: 12,
+      originalCost: 4500,
+      repairCost: 450,
       tag: 'Furniture • Wood',
       svgThumb: `<svg viewBox="0 0 100 100" width="100%" height="100%"><rect width="100" height="100" fill="#1e293b"/><text x="50" y="55" font-size="40" text-anchor="middle" dominant-baseline="middle">🪑</text></svg>`
     },
@@ -417,8 +433,8 @@ const REFIX_DATA = {
       category: 'electronics',
       material: 'modular_electronics',
       severity: 'moderate',
-      originalCost: 720,
-      repairCost: 75,
+      originalCost: 24000,
+      repairCost: 3200,
       tag: 'Electronics • Phone',
       svgThumb: `<svg viewBox="0 0 100 100" width="100%" height="100%"><rect width="100" height="100" fill="#1e293b"/><text x="50" y="55" font-size="40" text-anchor="middle" dominant-baseline="middle">📱</text></svg>`
     },
@@ -429,8 +445,8 @@ const REFIX_DATA = {
       category: 'clothing',
       material: 'cotton_denim',
       severity: 'minor',
-      originalCost: 85,
-      repairCost: 8,
+      originalCost: 2799,
+      repairCost: 250,
       tag: 'Textiles • Denim',
       svgThumb: `<svg viewBox="0 0 100 100" width="100%" height="100%"><rect width="100" height="100" fill="#1e293b"/><text x="50" y="55" font-size="40" text-anchor="middle" dominant-baseline="middle">👖</text></svg>`
     },
@@ -441,7 +457,7 @@ const REFIX_DATA = {
       category: 'kitchen',
       material: 'teflon_nonstick',
       severity: 'critical',
-      originalCost: 40,
+      originalCost: 1800,
       repairCost: 0,
       tag: 'Cookware • Safety Veto',
       svgThumb: `<svg viewBox="0 0 100 100" width="100%" height="100%"><rect width="100" height="100" fill="#1e293b"/><text x="50" y="55" font-size="40" text-anchor="middle" dominant-baseline="middle">🍳</text></svg>`
@@ -453,8 +469,8 @@ const REFIX_DATA = {
       category: 'mechanical',
       material: 'steel_alloy',
       severity: 'minor',
-      originalCost: 480,
-      repairCost: 14,
+      originalCost: 12500,
+      repairCost: 650,
       tag: 'Bicycles • Cable',
       svgThumb: `<svg viewBox="0 0 100 100" width="100%" height="100%"><rect width="100" height="100" fill="#1e293b"/><text x="50" y="55" font-size="40" text-anchor="middle" dominant-baseline="middle">🚲</text></svg>`
     }
@@ -1089,6 +1105,47 @@ const REFIX_DATA = {
       modular_electronics: 1200,
       synthetic_textile: 1200
     }
+  },
+
+  // Distinct illustrative estimates in Indian Rupees (₹) for all Universal Scope options
+  subcategoryDefaults: {
+    'Solid Oak Dining Chair': { originalCost: 4500, repairCost: 450, ageYears: 7, damageSeverity: 'minor', material: 'solid_wood', damageDetails: 'Wobbly mortise joint, wood fibers structurally sound.' },
+    'Hardwood Table / Desk': { originalCost: 8500, repairCost: 750, ageYears: 5, damageSeverity: 'minor', material: 'solid_wood', damageDetails: 'Surface water rings and finish scratches on tabletop.' },
+    'Cabinet / Dresser Drawer': { originalCost: 6200, repairCost: 500, ageYears: 6, damageSeverity: 'minor', material: 'solid_wood', damageDetails: 'Sticky wooden drawer runners and misaligned faceplate.' },
+    'Bookshelf & Shelving': { originalCost: 3800, repairCost: 350, ageYears: 4, damageSeverity: 'minor', material: 'engineered_wood', damageDetails: 'Loose shelf pins and sagging center span bracket.' },
+    'Upholstered Armchair': { originalCost: 11000, repairCost: 1400, ageYears: 5, damageSeverity: 'moderate', material: 'upholstered', damageDetails: 'Worn cushion batting and minor piping thread separation.' },
+    'Wooden Bed Frame': { originalCost: 14000, repairCost: 900, ageYears: 4, damageSeverity: 'minor', material: 'solid_wood', damageDetails: 'Squeaking side rail bracket connection bolts.' },
+
+    'Solid State Drive (SSD)': { originalCost: 4200, repairCost: 850, ageYears: 3, damageSeverity: 'minor', material: 'modular_electronics', damageDetails: 'Loose USB-C connector port on enclosure. NAND flash memory 100% healthy.' },
+    'Smartphone / Mobile Device': { originalCost: 24000, repairCost: 3200, ageYears: 3, damageSeverity: 'moderate', material: 'modular_electronics', damageDetails: 'Cracked outer display glass; digitizer touch and logic board fully working.' },
+    'Laptop & Computing Hardware': { originalCost: 48000, repairCost: 4500, ageYears: 4, damageSeverity: 'minor', material: 'modular_electronics', damageDetails: 'Degraded battery runtime and dusty cooling fan.' },
+    'Kitchen Blender & Mixer': { originalCost: 3200, repairCost: 400, ageYears: 3, damageSeverity: 'minor', material: 'electromechanical', damageDetails: 'Stripped rubber drive coupling gear on motor base.' },
+    'Headphones & Audio Gear': { originalCost: 5500, repairCost: 600, ageYears: 2, damageSeverity: 'minor', material: 'modular_electronics', damageDetails: 'Cracked plastic headband slider and worn faux-leather ear cushions.' },
+    'Power Tool Battery & Charger': { originalCost: 3900, repairCost: 550, ageYears: 3, damageSeverity: 'minor', material: 'modular_electronics', damageDetails: 'Oxidized terminal blades on 18V battery casing.' },
+
+    'Damaged Cotton Shirt': { originalCost: 1499, repairCost: 150, ageYears: 2, damageSeverity: 'minor', material: 'cotton_denim', damageDetails: 'Torn underarm seam (4cm) and missing cuff button.' },
+    'Denim Jeans & Jackets': { originalCost: 2799, repairCost: 250, ageYears: 3, damageSeverity: 'minor', material: 'cotton_denim', damageDetails: 'Worn knee blowout; zipper, waistband, and rivets solid.' },
+    'Worn Leather Boots': { originalCost: 6500, repairCost: 950, ageYears: 5, damageSeverity: 'moderate', material: 'leather', damageDetails: 'Worn angled heel rubber outsole; upper leather well-conditioned.' },
+    'Winter Coat / Parka': { originalCost: 7500, repairCost: 500, ageYears: 3, damageSeverity: 'minor', material: 'synthetic_textile', damageDetails: 'Broken main zipper slider pulling off teeth track.' },
+    'Backpack / Canvas Bag': { originalCost: 2200, repairCost: 200, ageYears: 3, damageSeverity: 'minor', material: 'synthetic_textile', damageDetails: 'Frayed shoulder strap stitching at top anchor point.' },
+    'Wool Sweater & Knitwear': { originalCost: 3400, repairCost: 300, ageYears: 4, damageSeverity: 'minor', material: 'wool', damageDetails: 'Small hole on elbow sleeve from moth wear.' },
+
+    'Non-Stick Frying Pan (PTFE)': { originalCost: 1800, repairCost: 0, ageYears: 4, damageSeverity: 'critical', material: 'teflon_nonstick', damageDetails: 'PTFE non-stick coating peeling and flaking into food.' },
+    'Cast Iron Skillet / Pot': { originalCost: 2400, repairCost: 180, ageYears: 10, damageSeverity: 'cosmetic', material: 'cast_iron_steel', damageDetails: 'Surface flash rust from moisture; cast iron body 100% intact.' },
+    'Stainless Steel Cookware': { originalCost: 3100, repairCost: 220, ageYears: 6, damageSeverity: 'minor', material: 'stainless_steel', damageDetails: 'Loose riveted stainless handle bracket.' },
+    'Ceramic Plates & Mugs': { originalCost: 1200, repairCost: 150, ageYears: 3, damageSeverity: 'minor', material: 'ceramic_porcelain', damageDetails: 'Small chip on outer ceramic mug rim.' },
+    'Glass Jars & Glassware': { originalCost: 600, repairCost: 80, ageYears: 2, damageSeverity: 'cosmetic', material: 'borosilicate_glass', damageDetails: 'Stuck corroded lid ring on vintage preserving jar.' },
+
+    'Commuter Bicycle': { originalCost: 12500, repairCost: 650, ageYears: 6, damageSeverity: 'minor', material: 'steel_alloy', damageDetails: 'Rear derailleur cable slack causes gear slipping under load.' },
+    'Skateboard & Longboard': { originalCost: 4500, repairCost: 400, ageYears: 2, damageSeverity: 'minor', material: 'hardwood_mechanics', damageDetails: 'Seized wheel bearings and chipped maple tail.' },
+    'Electric Cordless Drill': { originalCost: 5800, repairCost: 650, ageYears: 4, damageSeverity: 'minor', material: 'power_tools', damageDetails: 'Sticky keyless chuck mechanism.' },
+    'Hand Saws & Wood Tools': { originalCost: 1600, repairCost: 150, ageYears: 8, damageSeverity: 'minor', material: 'carbon_steel', damageDetails: 'Dull crosscut teeth and light surface oxidation.' },
+    'Sports Ball & Inflation Gear': { originalCost: 1200, repairCost: 100, ageYears: 2, damageSeverity: 'minor', material: 'composite_sports', damageDetails: 'Leaking air valve needle bladder core.' },
+
+    'Old Hardcover Book': { originalCost: 850, repairCost: 120, ageYears: 15, damageSeverity: 'cosmetic', material: 'paper_cardboard', damageDetails: 'Loose spine cloth binding, intact readable text block.' },
+    'Plastic Storage Containers': { originalCost: 650, repairCost: 80, ageYears: 3, damageSeverity: 'minor', material: 'polypropylene', damageDetails: 'Cracked plastic lid snap latch hinge.' },
+    'Luggage & Hard Travel Cases': { originalCost: 4500, repairCost: 450, ageYears: 4, damageSeverity: 'minor', material: 'polycarbonate', damageDetails: 'Broken 360 spinner caster wheel bracket.' },
+    'Kids Toys & Activity Sets': { originalCost: 1400, repairCost: 120, ageYears: 2, damageSeverity: 'minor', material: 'polypropylene', damageDetails: 'Loose battery spring contact terminal.' }
   }
 };
 

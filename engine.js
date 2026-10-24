@@ -26,7 +26,7 @@ class RefixEngine {
     const materialInfo = this.findMaterial(category, materialKey);
     const carbonBenchmark = (this.data.carbonFactors && this.data.carbonFactors[materialKey]) || { co2ePerKg: 10, waterLitersPerKg: 1000, circularScore: 50 };
 
-    const originalCost = Math.max(5, parseFloat(input.originalCost) || 50);
+    const originalCost = Math.max(10, parseFloat(input.originalCost) || 4500);
     const ageYears = Math.max(0, parseFloat(input.ageYears) || 1);
     const damageSeverity = input.damageSeverity || 'minor';
     const partsAvailability = input.partsAvailability || 'available';
@@ -34,13 +34,14 @@ class RefixEngine {
 
     // Auto-estimate repair cost if not provided or 0
     let repairCost = parseFloat(input.repairCost);
-    if (isNaN(repairCost) || repairCost <= 0) {
-      repairCost = this.estimateRepairCost(originalCost, damageSeverity, partsAvailability);
+    if (isNaN(repairCost) || repairCost < 0) {
+      repairCost = Math.round(originalCost * 0.15);
     }
 
     // Economic Viability Ratio: Repair Cost / Replacement Cost
-    const evr = repairCost / originalCost;
-    const repurposeCost = Math.round(originalCost * 0.12 * 10) / 10;
+    const evr = originalCost > 0 ? repairCost / originalCost : 0;
+    const repurposeCost = Math.round(originalCost * 0.12);
+    const reuseValue = Math.round(originalCost * 0.65);
 
     // Component scores
     const severityScore = this.getSeverityScore(damageSeverity);
@@ -117,6 +118,7 @@ class RefixEngine {
         originalCost,
         repairCost,
         repurposeCost,
+        reuseValue,
         moneySaved,
         savingsPercent
       },
@@ -125,11 +127,20 @@ class RefixEngine {
         wasteDivertedKg,
         waterConservedL
       },
-      actionPlan,
+      actionPlan: {
+        mode: actionPlan.mode || 'Recommended Action',
+        difficultyBadge: 'Moderate',
+        keySteps: actionPlan.steps || actionPlan.keySteps || [],
+        steps: actionPlan.steps || actionPlan.keySteps || [],
+        toolsNeeded: Array.isArray(actionPlan.toolsNote) ? actionPlan.toolsNote : [actionPlan.toolsNote || 'Hand tools'],
+        toolsNote: actionPlan.toolsNote || 'Hand tools'
+      },
       safetyVeto,
-      itemTitle: input.itemTitle,
+      itemTitle: input.itemTitle || 'Item',
+      category: category,
       categoryName: category.name,
-      materialName: materialInfo.name
+      materialInfo: materialInfo,
+      materialName: materialInfo ? materialInfo.name : 'Standard'
     };
   }
 
@@ -146,7 +157,7 @@ class RefixEngine {
     const materialInfo = this.findMaterial(category, materialKey);
     const carbonBenchmark = (this.data.carbonFactors && this.data.carbonFactors[materialKey]) || { co2ePerKg: 10, waterLitersPerKg: 1000, circularScore: 50 };
 
-    const originalCost = Math.max(5, parseFloat(item.originalCostUSD || item.originalCost) || 50);
+    const originalCost = Math.max(10, parseFloat(item.originalCost) || parseFloat(item.originalCostUSD) || 4500);
     const damageSeverity = item.damageSeverity || item.severity || 'minor';
 
     // 1. Safety Hazard Check
@@ -161,9 +172,9 @@ class RefixEngine {
     let actionCost = 0;
 
     if (actionZone === 'repair') {
-      actionCost = item.repairCostUSD !== undefined ? item.repairCostUSD : Math.round(originalCost * 0.18);
+      actionCost = item.repairCost !== undefined ? parseFloat(item.repairCost) : (item.repairCostUSD !== undefined ? parseFloat(item.repairCostUSD) : Math.round(originalCost * 0.15));
     } else if (actionZone === 'repurpose') {
-      actionCost = Math.round(originalCost * 0.12 * 10) / 10;
+      actionCost = item.repurposeCost !== undefined ? parseFloat(item.repurposeCost) : Math.round(originalCost * 0.12);
     } else if (actionZone === 'reuse') {
       actionCost = Math.round(originalCost * 0.05);
     } else if (actionZone === 'recycle') {
@@ -229,8 +240,9 @@ class RefixEngine {
       reuseScore,
       costs: {
         originalCost,
-        repairCost: actionZone === 'repair' ? actionCost : Math.round(originalCost * 0.18),
-        repurposeCost: actionZone === 'repurpose' ? actionCost : Math.round(originalCost * 0.12),
+        repairCost: actionZone === 'repair' ? actionCost : (item.repairCost !== undefined ? parseFloat(item.repairCost) : Math.round(originalCost * 0.15)),
+        repurposeCost: actionZone === 'repurpose' ? actionCost : (item.repurposeCost !== undefined ? parseFloat(item.repurposeCost) : Math.round(originalCost * 0.12)),
+        reuseValue: item.reuseValue !== undefined ? parseFloat(item.reuseValue) : Math.round(originalCost * 0.65),
         actionCost,
         moneySaved,
         savingsPercent
@@ -242,13 +254,18 @@ class RefixEngine {
       },
       actionPlan: {
         mode: `Action Pathway: ${actionZone.toUpperCase()}`,
-        steps,
-        toolsNote: toolsNeeded
+        difficultyBadge: actionZone === 'replace' ? 'Commercial' : 'DIY / Moderate',
+        keySteps: steps || [],
+        steps: steps || [],
+        toolsNeeded: Array.isArray(toolsNeeded) ? toolsNeeded : [toolsNeeded || 'Hand tools'],
+        toolsNote: Array.isArray(toolsNeeded) ? toolsNeeded.join(', ') : (toolsNeeded || 'Hand tools')
       },
       safetyVeto,
       itemTitle: item.itemTitle || item.name || 'Item',
+      category: category,
       categoryName: category.name,
-      materialName: materialInfo.name
+      materialInfo: materialInfo,
+      materialName: materialInfo ? materialInfo.name : 'Standard'
     };
   }
 
